@@ -1,0 +1,14 @@
+name: mock_worker
+
+channels:
+  - conda-forge
+
+
+dependencies:
+  - python =3.10
+
+  - pip
+  - pip:
+    - fastapi[all]
+    - python-multipart
+    - requests

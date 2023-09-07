@@ -1,5 +1,6 @@
-from fastapi import FastAPI
-from fastapi import FastAPI, File, Form, UploadFile
+from typing import Literal
+
+from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -42,9 +43,9 @@ async def job_get() -> Job:
         files={
             "config/music.mp3": "music",  # path / file_id
             "config/video.mp3": "video",
-            },
+        },
         path_upload="output/",
-        )
+    )
 
 
 @app.post("/job/{job_id}/file")
@@ -59,11 +60,15 @@ async def job_status_get(job_id):
 
 
 class StatusBody(BaseModel):
-    status_body: str
+    status_body: str | None
 
 
 @app.put("/job/{job_id}/status")
-async def job_status_put(job_id, status: str, status_body: StatusBody | None = None):
+async def job_status_put(
+    job_id: str,
+    status: Literal["running", "stopped", "error"],
+    status_body: StatusBody | None = None,
+):
     return {
         "job_id": job_id,
         "status": status,

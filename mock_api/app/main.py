@@ -26,6 +26,9 @@ async def file_get(file_id) -> str:
             url = "http://212.183.159.230/5MB.zip"
         case "video":
             url = "http://212.183.159.230/10MB.zip"
+        case _:
+            print(file_id)
+            raise ValueError(f"Unknown file_id {file_id}")
 
     return url
 
@@ -39,7 +42,8 @@ async def job_get() -> Job:
         files={
             "config/music.mp3": "music",  # path / file_id
             "config/video.mp3": "video",
-            }
+            },
+        path_upload="output/",
         )
 
 
@@ -54,10 +58,14 @@ async def job_status_get(job_id):
     return {"message": f"The job with ID {job_id}."}
 
 
+class StatusBody(BaseModel):
+    status_body: str
+
+
 @app.put("/job/{job_id}/status")
-async def job_status_put(job_id, status: str, status_body: str | None = None):
+async def job_status_put(job_id, status: str, status_body: StatusBody | None = None):
     return {
         "job_id": job_id,
         "status": status,
-        "status_body": status_body,
+        "status_body": status_body.status_body,
     }

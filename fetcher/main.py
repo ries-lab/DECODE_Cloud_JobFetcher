@@ -3,10 +3,15 @@ import docker
 import time
 import os
 
-URL_JOB_GET = os.getenv("URL_JOB_GET", "http://10.11.39.126:8000/job")
-URL_JOB_FILES = os.getenv("URL_JOB_STATUS", "http://10.11.39.126:8000/job/{{job_id}}/file")
-URL_JOB_STATUS = os.getenv("URL_JOB_STATUS", "http://10.11.39.126:8000/job/{{job_id}}/status")
-URL_FILES = os.getenv("URL_FILES", "http://10.11.39.126:8000/file/{{file_id}}")
+from pathlib import Path
+
+
+URL_BASE = "http://10.11.133.87:8000"
+
+URL_JOB_GET = os.getenv("URL_JOB_GET", f"{URL_BASE}/job")
+URL_JOB_FILES = os.getenv("URL_JOB_STATUS", f"{URL_BASE}/job/$job_id$/file")
+URL_JOB_STATUS = os.getenv("URL_JOB_STATUS", f"{URL_BASE}/job/$job_id$/status")
+URL_FILES = os.getenv("URL_FILES", f"{URL_BASE}/file/$file_id$")
 
 TIMEOUT = os.getenv("TIMEOUT", 30)
 TIMEOUT_MONITOR = os.getenv("TIMEOUT_MONITOR", 2)
@@ -35,7 +40,7 @@ while True:
         # download files and save to common space
         paths = data["files"]
         for p, p_id in paths.items():
-            p_url = requests.get(URL_FILES.replace("{{file_id}}", p_id))
+            p_url = requests.get(URL_FILES.replace("$file_id$", p_id))
             p_url = p_url.json()
             r = requests.get(p_url, allow_redirects=True)
             open(p, "wb").write(r.content)
@@ -50,19 +55,35 @@ while True:
             container.reload()
             print(container.attrs["State"])
 
-            # TODO: SEND KEEPALIVE
-
-            if not container.attrs["State"]["Running"]:
-                break
+            match container.attrs["State"]:
+                case {"Status": "running"}:
+                    requests.put(
+                        URL_JOB_STATUS.replace("$job_id$", job_id),
+                        params={"status": "running"}, json={"status_body": ""}
+                        )
+                case {"Status": "exited", "ExitCode": 0}:
+                    requests.put(
+                        URL_JOB_STATUS.replace("$job_id$", job_id),
+                        params={"status": "finished"}, json={"status_body": ""}
+                        )
+                    break
+                case {"Status": "exited", "ExitCode": exit_code, "Error": err_info}:
+                    requests.put(
+                        URL_JOB_STATUS.replace("$job_id$", job_id),
+                        params={"status": "error"}, json={"status_body": f"Exit Code: {exit_code}\n{err_info}"}
+                        )
+                    break
+                case _:
+                    raise ValueError
 
             time.sleep(TIMEOUT_MONITOR)
 
         # upload result
-        files = {
-            "music.mp3": {"file": ("config/music.mp3", open("config/music.mp3", "rb"))},
-            "video.mp3": {"file": ("config/video.mp3", open("config/video.mp3", "rb"))},
-        }
-        [requests.post(URL_JOB_FILES.replace("{{job_id}}", job_id), files=f) for f in files.values()]
+        path_upload = Path(data["path_upload"])
+        path_upload = path_upload.glob("*")
+
+        files = [{"file": (str(p), open(p, "rb"))} for p in path_upload]
+        [requests.post(URL_JOB_FILES.replace("$job_id$", job_id), files=f) for f in files]
 
         # clean up
 

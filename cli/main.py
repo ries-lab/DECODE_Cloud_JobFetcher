@@ -14,7 +14,7 @@ URL_JOB_FILES = os.getenv("URL_JOB_STATUS", f"{URL_BASE}/job/$job_id$/file")
 URL_JOB_STATUS = os.getenv("URL_JOB_STATUS", f"{URL_BASE}/job/$job_id$/status")
 URL_FILES = os.getenv("URL_FILES", f"{URL_BASE}/file/$file_id$")
 
-TIMEOUT = os.getenv("TIMEOUT", 30)
+TIMEOUT = os.getenv("TIMEOUT", 10)
 TIMEOUT_MONITOR = os.getenv("TIMEOUT_MONITOR", 2)
 
 PATH_BASE = Path(os.getenv("PATH_BASE", "~/git/JobFetcher")).expanduser()
@@ -51,7 +51,10 @@ while True:
 
         # Run the worker container
         container = client.containers.run(
-            image, environment={"JOB_ID": job_id}, detach=True
+            image,
+            command=data["command"],
+            environment=data["job_env"],
+            detach=True
         )
         print(f"Started container {container.id} for job {job_id} using {image}")
 
@@ -63,6 +66,7 @@ while True:
         while True:
             docker_stat.ping()
             if docker_stat.exited:
+                print(container.logs())
                 break
 
             time.sleep(TIMEOUT_MONITOR)

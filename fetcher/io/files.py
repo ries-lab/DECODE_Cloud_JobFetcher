@@ -1,7 +1,7 @@
 from abc import abstractmethod
+from pathlib import Path
 
 import requests
-from pathlib import Path
 
 
 class Uploader:
@@ -17,7 +17,8 @@ class APIUploader(Uploader):
 
     def put(self, path: Path, filename: str | None = None):
         f = {"file": (path.stem if filename is None else filename, open(path, "rb"))}
-        requests.post(self._url, files=f)
+        r = requests.post(self._url, files=f)
+        r.raise_for_status()
 
 
 class Downloader:
@@ -29,3 +30,13 @@ class Downloader:
     @abstractmethod
     def get(self, url: str, path: Path):
         raise NotImplementedError
+
+
+class APIDownloader(Downloader):
+    def get(self, url: str, path: Path):
+        r = requests.get(url, allow_redirects=True)
+        r.raise_for_status()
+
+        path = path if path is not None else self._path
+        with path.open("wb") as f:
+            f.write(r.content)

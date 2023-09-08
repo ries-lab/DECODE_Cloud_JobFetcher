@@ -1,10 +1,11 @@
-import requests
-import docker
-import time
 import os
-
+import time
 from pathlib import Path
 
+import docker
+import requests
+
+from fetcher.docker import manager
 from fetcher import status
 
 URL_BASE = "http://10.11.39.126:8000"
@@ -17,9 +18,7 @@ URL_FILES = os.getenv("URL_FILES", f"{URL_BASE}/file/$file_id$")
 TIMEOUT = os.getenv("TIMEOUT", 10)
 TIMEOUT_MONITOR = os.getenv("TIMEOUT_MONITOR", 2)
 
-PATH_BASE = Path(os.getenv("PATH_BASE", "~/git/JobFetcher")).expanduser()
-
-client = docker.from_env()
+PATH_BASE = Path(os.getenv("PATH_BASE", "~/temp/decode_cloud/mounts")).expanduser()
 
 
 while True:
@@ -29,15 +28,6 @@ while True:
 
     if data:
         job_id = data["job_id"]
-        image = f"{data['image']}:{data['image_version']}"
-
-        try:
-            client.images.get(image)
-        except docker.errors.ImageNotFound:
-            client.images.pull(image)
-        except docker.errors.APIError as e:
-            print(f"Error checking/pulling the Docker image: {e}")
-            continue
 
         # download files and save to common space
         paths = data["files"]
@@ -49,14 +39,30 @@ while True:
             with (PATH_BASE / p).open("wb") as f:
                 f.write(r.content)
 
-        # Run the worker container
-        container = client.containers.run(
-            image,
+        # establish bind mounts
+        mounts = [
+            docker.types.Mount(
+                "/data",
+                str(Path("~/temp/decode_cloud/mounts/data").expanduser()),
+                type="bind",
+                read_only=True,
+            ),
+            docker.types.Mount(
+                "/output",
+                str(Path("~/temp/decode_cloud/mounts/output").expanduser()),
+                type="bind",
+                read_only=False,
+            ),
+        ]
+
+        docker_manager = manager.Manager(image=f"{data['image']}:{data['image_version']}")
+        container = docker_manager.auto_run(
             command=data["command"],
             environment=data["job_env"],
-            detach=True
+            mounts=mounts,
+            detach=True,
         )
-        print(f"Started container {container.id} for job {job_id} using {image}")
+        print(f"Started container {container.id} for job {job_id} using {docker_manager.image}")
 
         # setup pinger
         pinger = status.ping.APIPing(URL_JOB_STATUS.replace("$job_id$", job_id))

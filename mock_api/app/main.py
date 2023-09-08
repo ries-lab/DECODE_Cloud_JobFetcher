@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, File, UploadFile
@@ -19,6 +20,8 @@ async def file_get(file_id) -> str:
             url = "http://212.183.159.230/5MB.zip"
         case "video":
             url = "http://212.183.159.230/10MB.zip"
+        case "decode_file":
+            url = "https://oc.embl.de/index.php/s/GzSbmU7pheHEdC0/download"
         case _:
             print(file_id)
             raise ValueError(f"Unknown file_id {file_id}")
@@ -41,12 +44,15 @@ async def job_get() -> Job:
     return Job(
         job_id="a6",
         image="mock_decode",
-        image_version="0.0.3",
+        image_version="0.0.4",
         command=None,
-        job_env={"JOB_ID": "a6"},
+        job_env={
+            "JOB_ID": "a6"
+        },
         files={
-            "config/music.mp3": "music",  # path / file_id
-            "config/video.mp3": "video",
+            # "config/music.mp3": "music",  # path / file_id
+            # "config/video.mp3": "video",
+            "data/decode.txt": "decode_file"
         },
         path_upload="output/",
     )
@@ -54,7 +60,14 @@ async def job_get() -> Job:
 
 @app.post("/job/{job_id}/file")
 async def job_file_post(job_id: str, file: UploadFile = File(...)):
-    print(f"Uploaded file for {job_id} with file {file.filename}")
+
+    # put file
+    p = Path("~/temp/decode_cloud/api").expanduser() / Path(file.filename).name
+
+    print(f"Uploaded file for {job_id} with file {file.filename}, dumping it to {p}")
+    with p.open("wb") as f:
+        f.write(file.file.read())
+
     return {"filename": file.filename}
 
 

@@ -6,14 +6,6 @@ from pydantic import BaseModel
 app = FastAPI()
 
 
-class Job(BaseModel):
-    job_id: str
-    image: str
-    image_version: str
-    files: dict[str, str]
-    path_upload: str
-
-
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
@@ -34,12 +26,24 @@ async def file_get(file_id) -> str:
     return url
 
 
+class Job(BaseModel):
+    job_id: str
+    image: str
+    image_version: str
+    command: str | list[str] | None
+    job_env: dict[str, str] | None
+    files: dict[str, str]
+    path_upload: str
+
+
 @app.get("/job")
 async def job_get() -> Job:
     return Job(
         job_id="a6",
         image="mock_decode",
-        image_version="0.0.2",
+        image_version="0.0.3",
+        command=None,
+        job_env={"JOB_ID": "a6"},
         files={
             "config/music.mp3": "music",  # path / file_id
             "config/video.mp3": "video",

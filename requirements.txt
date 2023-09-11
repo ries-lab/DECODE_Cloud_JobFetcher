@@ -1,3 +1,5 @@
 docker
 requests
 pytest
+psutil
+gputil

@@ -6,6 +6,15 @@ import GPUtil
 import psutil
 
 
+def collect() -> dict:
+    return {
+        "host": collect_host(),
+        "os": collect_os(),
+        "sys": collect_sys(),
+        "gpu": collect_gpu(),
+    }
+
+
 def collect_host() -> dict:
     return {
         "hostname": socket.gethostname(),

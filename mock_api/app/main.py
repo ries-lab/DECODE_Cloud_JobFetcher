@@ -40,27 +40,50 @@ class Job(BaseModel):
 
 
 @app.get("/job")
-async def job_get() -> Job:
-    return Job(
-        job_id="a6",
-        image="mock_decode",
-        image_version="0.0.4",
-        command=None,
-        job_env={
-            "JOB_ID": "a6"
-        },
-        files={
-            # "config/music.mp3": "music",  # path / file_id
-            # "config/video.mp3": "video",
-            "data/decode.txt": "decode_file"
-        },
-        path_upload="output/",
-    )
+async def job_get(
+    hostname: str,
+    cpu_cores: int,
+    memory: int,
+    env: str | None = None,
+    gpu_model: str | None = None,
+    gpu_archi: str | None = None,
+    gpu_mem: int | None = None,
+    groups: list[str] | None = None,
+    limit: int = 1,
+    older_than: int | None = None,
+) -> list[Job]:
+    if "gpu_model" is not None:
+        return [
+            Job(
+                job_id="a6",
+                image="decode",
+                image_version="dev_multiphot_tar",
+                command=[
+                    # fmt: off
+                    "python", "-m", "cli.train",
+                    "--config-dir", "/data/config/",
+                    "--config-name", "config.yaml"
+                    "Paths.calibration=/data/data/beads.mat",
+                    "Paths.trafo=/data/data/trafo.mat",
+                    "Paths.experiment=/output/",
+                    "Paths.data=/output/"
+                    # fmt: on
+                ],
+                job_env={"JOB_ID": "a6"},
+                files={
+                    "config/config.yaml": "https://oc.embl.de/index.php/s/Vt8Tz9c4YlHikOr/download",
+                    "data/trafo.mat": "https://oc.embl.de/index.php/s/mc9oilE0d6fcN52/download",
+                    "data/beads.mat": "https://oc.embl.de/index.php/s/0FIg3YfBSooZiMI/download",
+                },
+                path_upload="/output/",
+            )
+        ]
+    else:
+        raise ValueError("No GPU available")
 
 
 @app.post("/job/{job_id}/file")
 async def job_file_post(job_id: str, file: UploadFile = File(...)):
-
     # put file
     p = Path("~/temp/decode_cloud/api").expanduser() / Path(file.filename).name
 

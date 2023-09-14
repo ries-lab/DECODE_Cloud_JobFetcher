@@ -34,7 +34,7 @@ def collect_sys() -> dict:
     return {
         "architecture": platform.machine(),
         "cores": os.cpu_count(),
-        "memory": psutil.virtual_memory(),
+        "memory": psutil.virtual_memory().total,
     }
 
 

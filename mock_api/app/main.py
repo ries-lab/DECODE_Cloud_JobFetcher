@@ -12,16 +12,20 @@ async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/file/{file_id}")
+@app.get("/file_url/{file_id}")
 async def file_get(file_id) -> str:
     # return presigned public URL
     match file_id:
-        case "music":
+        case "config_a6":
+            url = "https://oc.embl.de/index.php/s/Vt8Tz9c4YlHikOr/download"
+        case "beads_a6":
+            url = "https://oc.embl.de/index.php/s/0FIg3YfBSooZiMI/download"
+        case "trafo_a6":
+            url = "https://oc.embl.de/index.php/s/mc9oilE0d6fcN52/download"
+        case "MB5":
             url = "http://212.183.159.230/5MB.zip"
-        case "video":
+        case "MB10":
             url = "http://212.183.159.230/10MB.zip"
-        case "decode_file":
-            url = "https://oc.embl.de/index.php/s/GzSbmU7pheHEdC0/download"
         case _:
             print(file_id)
             raise ValueError(f"Unknown file_id {file_id}")
@@ -60,20 +64,18 @@ async def job_get(
                 image_version="dev_multiphot_tar",
                 command=[
                     # fmt: off
-                    "python", "-m", "cli.train",
+                    # "python", "-m", "cli.train",
                     "--config-dir", "/data/config/",
-                    "--config-name", "config.yaml"
-                    "Paths.calibration=/data/data/beads.mat",
-                    "Paths.trafo=/data/data/trafo.mat",
-                    "Paths.experiment=/output/",
-                    "Paths.data=/output/"
+                    "--config-name", "config",
+                    "Trainer.max_epochs=1",
+                    # ToDo: This is an assumption that the data is in the right place
                     # fmt: on
                 ],
                 job_env={"JOB_ID": "a6"},
                 files={
-                    "config/config.yaml": "https://oc.embl.de/index.php/s/Vt8Tz9c4YlHikOr/download",
-                    "data/trafo.mat": "https://oc.embl.de/index.php/s/mc9oilE0d6fcN52/download",
-                    "data/beads.mat": "https://oc.embl.de/index.php/s/0FIg3YfBSooZiMI/download",
+                    "config/config.yaml": "config_a6",
+                    "data/beads.mat": "beads_a6",
+                    "data/trafo.mat": "trafo_a6",
                 },
                 path_upload="/output/",
             )
@@ -85,11 +87,11 @@ async def job_get(
 @app.post("/job/{job_id}/file")
 async def job_file_post(job_id: str, file: UploadFile = File(...)):
     # put file
-    p = Path("~/temp/decode_cloud/api").expanduser() / Path(file.filename).name
+    p = Path("/home/riesgroup/temp/decode_cloud/mounts/a6/output").expanduser() / Path(file.filename).name
 
-    print(f"Uploaded file for {job_id} with file {file.filename}, dumping it to {p}")
-    with p.open("wb") as f:
-        f.write(file.file.read())
+    print(f"Would have uploaded file for {job_id} with file {file.filename}, dumping it to {p}")
+    # with p.open("wb") as f:
+    #     f.write(file.file.read())
 
     return {"filename": file.filename}
 

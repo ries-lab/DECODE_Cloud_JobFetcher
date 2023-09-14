@@ -12,9 +12,10 @@ class Manager:
         environment: dict[str, str] | None = None,
         mounts: list[docker.types.Mount] | None = None,
         detach: bool = True,
+        **kwargs
     ):
         self.pull()
-        return self.run(command, environment, mounts, detach)
+        return self.run(command, environment, mounts, detach, **kwargs)
 
     def run(
         self,
@@ -22,6 +23,7 @@ class Manager:
         environment: dict[str, str] | None = None,
         mounts: list[docker.types.Mount] | None = None,
         detach: bool = True,
+        **kwargs
     ):
         return self._client.containers.run(
             self.image,
@@ -29,6 +31,7 @@ class Manager:
             environment=environment,
             mounts=mounts,
             detach=detach,
+            **kwargs,
         )
 
     def pull(self):

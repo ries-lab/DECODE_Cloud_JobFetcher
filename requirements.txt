@@ -3,3 +3,4 @@ requests
 pytest
 psutil
 gputil
+loguru

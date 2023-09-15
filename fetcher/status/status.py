@@ -1,5 +1,7 @@
 from abc import abstractmethod
 
+from loguru import logger
+
 from . import ping as ping_module
 
 
@@ -28,6 +30,7 @@ class DockerStatus(Status):
 
     def ping(self):
         self._container.reload() if self._update_on_ping else None
+        logger.debug(f"Container state: {self._container.attrs['State']}")
 
         match self._container.attrs["State"]:
             case {"Status": "running"}:

@@ -33,14 +33,28 @@ async def file_get(file_id) -> str:
     return url
 
 
-class Job(BaseModel):
+class SpecsHandler(BaseModel):
+    image_url: str
+    files_down: dict[str, str]
+    files_up: list[str]
+
+
+class SpecsApp(BaseModel):
+    cmd: list[str] | None
+    env: dict[str, str] | None = None
+
+
+class SpecsMeta(BaseModel):
     job_id: str
-    image: str
-    image_version: str
-    command: str | list[str] | None
-    job_env: dict[str, str] | None
-    files: dict[str, str]
-    path_upload: str
+
+    class Config:
+        extra = "allow"
+
+
+class Job(BaseModel):
+    app: SpecsApp
+    handler: SpecsHandler
+    meta: SpecsMeta
 
 
 @app.get("/job")
@@ -59,25 +73,26 @@ async def job_get(
     if "gpu_model" is not None:
         return [
             Job(
-                job_id="a6",
-                image="decode",
-                image_version="dev_multiphot_tar",
-                command=[
-                    # fmt: off
-                    # "python", "-m", "cli.train",
-                    "--config-dir", "/data/config/",
-                    "--config-name", "config",
-                    "Trainer.max_epochs=1",
-                    # ToDo: This is an assumption that the data is in the right place
-                    # fmt: on
-                ],
-                job_env={"JOB_ID": "a6"},
-                files={
-                    "config/config.yaml": "config_a6",
-                    "data/beads.mat": "beads_a6",
-                    "data/trafo.mat": "trafo_a6",
-                },
-                path_upload="/output/",
+                app=SpecsApp(
+                    cmd=[
+                        # fmt: off
+                        # "python", "-m", "cli.train",
+                        "--config-dir", "/data/config/",
+                        "--config-name", "config",
+                        "Trainer.max_epochs=1",
+                        # fmt: on
+                    ]
+                ),
+                handler=SpecsHandler(
+                    image_url="decode:dev_multiphot_tar",
+                    files_down={
+                        "config/config.yaml": "config_a6",
+                        "data/beads.mat": "beads_a6",
+                        "data/trafo.mat": "trafo_a6",
+                    },
+                    files_up=["output/"],
+                ),
+                meta=SpecsMeta(job_id="a6"),
             )
         ]
     else:
@@ -87,9 +102,14 @@ async def job_get(
 @app.post("/job/{job_id}/file")
 async def job_file_post(job_id: str, file: UploadFile = File(...)):
     # put file
-    p = Path("/home/riesgroup/temp/decode_cloud/mounts/a6/output").expanduser() / Path(file.filename).name
+    p = (
+        Path("/home/riesgroup/temp/decode_cloud/mounts/a6/output").expanduser()
+        / Path(file.filename).name
+    )
 
-    print(f"Would have uploaded file for {job_id} with file {file.filename}, dumping it to {p}")
+    print(
+        f"Would have uploaded file for {job_id} with file {file.filename}, dumping it to {p}"
+    )
     # with p.open("wb") as f:
     #     f.write(file.file.read())
 

@@ -51,7 +51,7 @@ while True:
 
     if data is not None and len(data) >= 1:
         data = data[0]
-        job_id = data["job_id"]
+        job_id = data["meta"]["job_id"]
 
         # establish temporary directory for the job
         exist_ok = True  # debugging
@@ -61,12 +61,14 @@ while True:
 
         path_data = path_job / "data"
         path_data.mkdir(parents=False, exist_ok=exist_ok)
-        path_out = path_job / "output"
-        path_out.mkdir(parents=False, exist_ok=exist_ok)
+
+        paths_out = [Path(p) for p in data["handler"]["files_up"]]
+        paths_out = [path_job / "output" for p in paths_out]
+        [p.mkdir(parents=False, exist_ok=exist_ok) for p in paths_out]
 
         # download files and save to common space
         downloader = io.files.APIDownloader(path_job)
-        paths = data["files"]
+        paths = data["handler"]["files_down"]
         for p, p_id in paths.items():
             if Path(p).is_absolute():
                 raise ValueError(f"Absolute paths are not allowed: {p}")
@@ -93,7 +95,7 @@ while True:
             ),
         ]
         docker_manager = manager.Manager(
-            image=f"{data['image']}:{data['image_version']}"
+            image=data["handler"]["image_url"],
         )
         kwargs_gpu = {
             "device_requests": [
@@ -101,8 +103,8 @@ while True:
             ],
         } if worker_info["gpu"] else {}
         container = docker_manager.auto_run(
-            command=data["command"],
-            environment=data["job_env"],
+            command=data["app"]["cmd"],
+            environment=data["app"]["env"],
             mounts=mounts,
             detach=True,
             ipc_mode="host",
@@ -127,8 +129,9 @@ while True:
 
         # upload result
         uploader = io.files.APIUploader(url_job_file.replace("$job_id$", job_id))
-        paths_upload = path_out.glob("*")
-        [uploader.put(p) for p in paths_upload if p.is_file()]
+        for p in paths_out:
+            paths_upload = p.rglob("*")
+            [uploader.put(pp) for pp in paths_upload if pp.is_file()]
 
     # Sleep for a defined interval before checking for the next job
     time.sleep(TIMEOUT)

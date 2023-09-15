@@ -49,7 +49,7 @@ while True:
     response.raise_for_status()
     data = response.json()
 
-    if data is not None:
+    if data is not None and len(data) >= 1:
         data = data[0]
         job_id = data["job_id"]
 

@@ -1,12 +1,16 @@
 from abc import abstractmethod
+from typing import Protocol
 
 from loguru import logger
 
-from . import ping as ping_module
+
+class Pingable(Protocol):
+    def ping(self, status: str, exit_code: int | None, body: str):
+        ...
 
 
 class Status:
-    def __init__(self, ping: ping_module.Ping):
+    def __init__(self, ping: Pingable):
         self._ping = ping
 
     @abstractmethod
@@ -15,7 +19,7 @@ class Status:
 
 
 class DockerStatus(Status):
-    def __init__(self, container, ping: ping_module.Ping, update_on_ping: bool = True):
+    def __init__(self, container, ping: Pingable, update_on_ping: bool = True):
         super().__init__(ping=ping)
 
         self._container = container

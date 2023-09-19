@@ -15,9 +15,10 @@ class APIUploader(Uploader):
         super().__init__()
         self._url = url
 
-    def put(self, path: Path, filename: str | None = None):
-        f = {"file": (path.stem if filename is None else filename, open(path, "rb"))}
-        r = requests.post(self._url, files=f)
+    def put(self, path: Path, type: str, path_api: str | None = None):
+        path_api = path.stem if path_api is None else path_api
+        f = {"file": (path_api, open(path, "rb"))}
+        r = requests.post(self._url, params={"path": path_api, "type": type}, files=f)
         r.raise_for_status()
 
 

@@ -36,7 +36,7 @@ async def file_get(file_id) -> str:
 class SpecsHandler(BaseModel):
     image_url: str
     files_down: dict[str, str]
-    files_up: list[str]
+    files_up: dict[str, str]
 
 
 class SpecsApp(BaseModel):
@@ -45,7 +45,6 @@ class SpecsApp(BaseModel):
 
 
 class SpecsMeta(BaseModel):
-    job_id: str
 
     class Config:
         extra = "allow"
@@ -57,7 +56,7 @@ class Job(BaseModel):
     meta: SpecsMeta
 
 
-@app.get("/job")
+@app.get("/jobs")
 async def job_get(
     hostname: str,
     cpu_cores: int,
@@ -69,54 +68,67 @@ async def job_get(
     groups: list[str] | None = None,
     limit: int = 1,
     older_than: int | None = None,
-) -> list[Job]:
-    if "gpu_model" is not None:
-        return [
-            Job(
-                app=SpecsApp(
-                    cmd=[
-                        # fmt: off
-                        # "python", "-m", "cli.train",
-                        "--config-dir", "/data/config/",
-                        "--config-name", "config",
-                        "Trainer.max_epochs=1",
-                        # fmt: on
-                    ]
-                ),
-                handler=SpecsHandler(
-                    image_url="decode:dev_multiphot_tar",
-                    files_down={
-                        "config/config.yaml": "config_a6",
-                        "data/beads.mat": "beads_a6",
-                        "data/trafo.mat": "trafo_a6",
-                    },
-                    files_up=["output/"],
-                ),
-                meta=SpecsMeta(job_id="a6"),
-            )
-        ]
-    else:
-        raise ValueError("No GPU available")
+) -> dict[str, Job]:
+
+    # return {
+    #     "a6": Job(
+    #         app=SpecsApp(
+    #             cmd=[
+    #                 # fmt: off
+    #                 # "python", "-m", "cli.train",
+    #                 "--config-dir", "/data/config/",
+    #                 "--config-name", "config",
+    #                 "Trainer.max_epochs=1",
+    #                 # fmt: on
+    #             ]
+    #         ),
+    #         handler=SpecsHandler(
+    #             image_url="decode:dev_multiphot_tar",
+    #             files_down={
+    #                 "config/config.yaml": "config_a6",
+    #                 "data/beads.mat": "beads_a6",
+    #                 "data/trafo.mat": "trafo_a6",
+    #             },
+    #             files_up={"artifact": "output/", "log": "log/"},
+    #         ),
+    #         meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
+    #     )
+    # }
+    return {
+        "mock_a6": Job(
+            app=SpecsApp(
+                cmd=None
+            ),
+            handler=SpecsHandler(
+                image_url="mock_decode:0.0.6",
+                files_down={
+                    "config/config.yaml": "config_a6",
+                    "data/beads.mat": "beads_a6",
+                    "data/trafo.mat": "trafo_a6",
+                },
+                files_up={"artifact": "artifact/", "log": "log/", "output": "output/"},
+            ),
+            meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
+        )
+    }
 
 
-@app.post("/job/{job_id}/file")
-async def job_file_post(job_id: str, file: UploadFile = File(...)):
+@app.post("/jobs/{job_id}/file")
+async def job_file_post(
+    job_id: str,
+    path: str,
+    type: Literal["artifact", "log", "output"],
+    file: UploadFile = File(...),
+):
     # put file
-    p = (
-        Path("/home/riesgroup/temp/decode_cloud/mounts/a6/output").expanduser()
-        / Path(file.filename).name
-    )
-
     print(
-        f"Would have uploaded file for {job_id} with file {file.filename}, dumping it to {p}"
+        f"Would have uploaded file {file.filename} of type {type} for {job_id}; "
+        f"dumping it to {path}"
     )
-    # with p.open("wb") as f:
-    #     f.write(file.file.read())
-
     return {"filename": file.filename}
 
 
-@app.get("/job/{job_id}/status")
+@app.get("/jobs/{job_id}/status")
 async def job_status_get(job_id):
     return {"message": f"The job with ID {job_id}."}
 
@@ -125,7 +137,7 @@ class StatusBody(BaseModel):
     status_body: str | None
 
 
-@app.put("/job/{job_id}/status")
+@app.put("/jobs/{job_id}/status")
 async def job_status_put(
     job_id: str,
     status: Literal["running", "stopped", "error"],

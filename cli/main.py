@@ -16,9 +16,9 @@ except socket.gaierror:
     host_ip = "localhost"
 
 URL_BASE = os.getenv("URL_BASE", "http://host.docker.internal:8000")
-url_job_get = f"{URL_BASE}/job"
-url_job_file = f"{URL_BASE}/job/$job_id$/file"
-url_job_status = f"{URL_BASE}/job/$job_id$/status"
+url_job_get = f"{URL_BASE}/jobs"
+url_job_file = f"{URL_BASE}/jobs/$job_id$/file"
+url_job_status = f"{URL_BASE}/jobs/$job_id$/status"
 url_files = f"{URL_BASE}/file_url/$file_id$"
 
 TIMEOUT = os.getenv("TIMEOUT", 10)
@@ -50,8 +50,9 @@ while True:
     data = response.json()
 
     if data is not None and len(data) >= 1:
-        data = data[0]
-        job_id = data["meta"]["job_id"]
+        if len(data) >= 2:
+            raise ValueError(f"Expected only one job, got {len(data)}")
+        job_id, data = data.popitem()
 
         # establish temporary directory for the job
         exist_ok = True  # debugging
@@ -62,9 +63,9 @@ while True:
         path_data = path_job / "data"
         path_data.mkdir(parents=False, exist_ok=exist_ok)
 
-        paths_out = [Path(p) for p in data["handler"]["files_up"]]
-        paths_out = [path_job / "output" for p in paths_out]
-        [p.mkdir(parents=False, exist_ok=exist_ok) for p in paths_out]
+        paths_out = {endpoint: Path(p) for endpoint, p in data["handler"]["files_up"].items()}
+        paths_out = {endpoint: path_job / p for endpoint, p in paths_out.items()}
+        [p.mkdir(parents=False, exist_ok=exist_ok) for p in paths_out.values()]
 
         # download files and save to common space
         downloader = io.files.APIDownloader(path_job)
@@ -85,7 +86,6 @@ while True:
 
         # here we need the paths on the host, we can not do this recursively
         path_mnt = path_host_base / path_job.relative_to(PATH_BASE)
-        print("Mountpoint for child container:", path_mnt)
         mounts = [
             docker.types.Mount(
                 "/data",
@@ -110,9 +110,6 @@ while True:
             ipc_mode="host",
             **kwargs_gpu,
         )
-        # print(
-        #     f"Started container {container.id} for job {job_id} using {docker_manager.image}"
-        # )
 
         # setup pinger
         pinger = status.ping.APIPing(url_job_status.replace("$job_id$", job_id))
@@ -129,9 +126,9 @@ while True:
 
         # upload result
         uploader = io.files.APIUploader(url_job_file.replace("$job_id$", job_id))
-        for p in paths_out:
+        for endpoint, p in paths_out.items():
             paths_upload = p.rglob("*")
-            [uploader.put(pp) for pp in paths_upload if pp.is_file()]
+            [uploader.put(pp, type=endpoint) for pp in paths_upload if pp.is_file()]
 
     # Sleep for a defined interval before checking for the next job
     time.sleep(TIMEOUT)

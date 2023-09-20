@@ -1,16 +1,11 @@
 from abc import abstractmethod
-from typing import Protocol
+from typing import Callable
 
 from loguru import logger
 
 
-class Pingable(Protocol):
-    def ping(self, status: str, exit_code: int | None, body: str):
-        ...
-
-
 class Status:
-    def __init__(self, ping: Pingable):
+    def __init__(self, ping: Callable):
         self._ping = ping
 
     @abstractmethod
@@ -19,7 +14,7 @@ class Status:
 
 
 class DockerStatus(Status):
-    def __init__(self, container, ping: Pingable, update_on_ping: bool = True):
+    def __init__(self, container, ping: Callable, update_on_ping: bool = True):
         super().__init__(ping=ping)
 
         self._container = container
@@ -38,10 +33,11 @@ class DockerStatus(Status):
 
         match self._container.attrs["State"]:
             case {"Status": "running"}:
-                self._ping.ping("running", None, None)
+                self._ping("running", None, None)
             case {"Status": "exited", "ExitCode": 0}:
-                self._ping.ping("stopped", 0, None)
+                self._ping("stopped", 0, None)
             case {"Status": "exited", "ExitCode": exit_code, "Error": err_info}:
-                self._ping.ping("error", exit_code, err_info)
+                logger.error(f"Container exited with error code {exit_code}: {err_info}")
+                self._ping("error", exit_code, err_info)
             case _:
                 raise ValueError

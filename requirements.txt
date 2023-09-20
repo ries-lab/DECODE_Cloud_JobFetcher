@@ -4,3 +4,4 @@ pytest
 psutil
 gputil
 loguru
+pydantic

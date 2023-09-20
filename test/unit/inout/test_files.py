@@ -21,6 +21,17 @@ def test_path_api_up_construction(delegate, tmpdir):
         assert isinstance(p, files.PathAPIUp)
 
 
+@pytest.mark.parametrize("path,path_api,expected", [
+    ("/a/b/c/d.txt", "/a/b/c", "d.txt"),
+    ("/a/b/c/d.txt", "/a/b", "c/d.txt"),
+])
+def test_path_api_up_relative(path, path_api, expected):
+    path = Path(path)
+
+    p = files.PathAPIUp(path, path_api, mock.MagicMock())
+    assert str(p.path_api_rel) == expected
+
+
 def test_path_api_up_push(tmpdir):
     p = Path(tmpdir) / "test.txt"
     p.write_text("test")

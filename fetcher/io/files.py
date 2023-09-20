@@ -21,7 +21,7 @@ class PathAPIUp(PathAPIbase):
     def __init__(
         self,
         path: str | Path,
-        path_api: str | Path,
+        path_api: str,
         api: worker.JobAPI,
     ):
         """
@@ -36,7 +36,7 @@ class PathAPIUp(PathAPIbase):
         self._api = api
 
     @property
-    def path_api_rel(self):
+    def path_api_rel(self) -> Path:
         """
         API-relative path
         """
@@ -48,6 +48,8 @@ class PathAPIUp(PathAPIbase):
         )
 
     def push(self):
+        if self._path.is_dir():
+            raise NotImplementedError("Directory upload not implemented")
         self._api.put_file_native(self._path, self.path_api_rel)
 
     def glob(self, pattern: str):
@@ -72,8 +74,10 @@ class PathAPIDown(PathAPIbase):
             f"PathAPIDown({repr(self._path)}, {repr(self._file_id)}, {repr(self._api)})"
         )
 
-    def get(self):
-        self._api.get_file(self._file_id, self._path)
+    def get(self, mkdir: bool = True, parents: bool = True):
+        if mkdir:
+            self._path.parent.mkdir(parents=parents, exist_ok=True)
+        return self._api.get_file(self._file_id, self._path)
 
 
 class PathAPItracked(Path):

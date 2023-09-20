@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Any
 
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
@@ -16,11 +16,11 @@ async def root():
 async def file_get(file_id) -> str:
     # return presigned public URL
     match file_id:
-        case "config_a6":
+        case "config_file_id":
             url = "https://oc.embl.de/index.php/s/Vt8Tz9c4YlHikOr/download"
-        case "beads_a6":
+        case "beads_file_id":
             url = "https://oc.embl.de/index.php/s/0FIg3YfBSooZiMI/download"
-        case "trafo_a6":
+        case "trafo_file_id":
             url = "https://oc.embl.de/index.php/s/mc9oilE0d6fcN52/download"
         case "MB5":
             url = "http://212.183.159.230/5MB.zip"
@@ -37,6 +37,7 @@ class SpecsHandler(BaseModel):
     image_url: str
     files_down: dict[str, str]
     files_up: dict[str, str]
+    aws_job_def: Any
 
 
 class SpecsApp(BaseModel):
@@ -45,7 +46,6 @@ class SpecsApp(BaseModel):
 
 
 class SpecsMeta(BaseModel):
-
     class Config:
         extra = "allow"
 
@@ -54,6 +54,9 @@ class Job(BaseModel):
     app: SpecsApp
     handler: SpecsHandler
     meta: SpecsMeta
+
+    class Config:
+        orm_mode = True
 
 
 @app.get("/jobs")
@@ -68,8 +71,37 @@ async def job_get(
     groups: list[str] | None = None,
     limit: int = 1,
     older_than: int | None = None,
-) -> dict[str, Job]:
-
+) -> dict[str, Any]:
+    return {
+        "5": {
+            "app": {
+                "cmd": [
+                    "--config-dir=/data/config",
+                    "--config-name=config",
+                    "Paths.experiment=/data/model",
+                    "Paths.logging=/data/log"
+                ],
+                "env": {}
+            },
+            "handler": {
+                "image_url": "public.ecr.aws/d2r7a3u1/decode:dev_multiphot_tar",
+                "aws_job_def": "decode_train_latest",
+                "files_down": {
+                    "config/config.yaml": "config_file_id",
+                    "data/beads.mat": "beads_file_id",
+                    "data/trafo.mat": "trafo_file_id"
+                },
+                "files_up": {
+                    "log": "log",
+                    "artifact": "model"
+                }
+            },
+            "meta": {
+                "job_id": 9,
+                "date_created": "2023-09-20T14:14:37.596024"
+            }
+        }
+    }
     # return {
     #     "a6": Job(
     #         app=SpecsApp(

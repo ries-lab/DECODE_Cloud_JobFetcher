@@ -31,6 +31,8 @@ class Manager:
             environment=environment,
             mounts=mounts,
             detach=detach,
+            stdout=True,
+            stderr=True,
             **kwargs,
         )
 

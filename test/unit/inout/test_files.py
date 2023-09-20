@@ -9,7 +9,10 @@ from fetcher.io import files
 @pytest.mark.parametrize("delegate", ["rglob", "glob"])
 def test_path_api_up_construction(delegate, tmpdir):
     # tests that construction works from methods
-    [(tmpdir / p).write_text("abc", encoding="utf8") for p in ["a.txt", "b.txt", "c.txt"]]
+    [
+        (tmpdir / p).write_text("abc", encoding="utf8")
+        for p in ["a.txt", "b.txt", "c.txt"]
+    ]
 
     p = files.PathAPIUp(Path(tmpdir), Path(""), None)
     p_files = list(getattr(p, delegate)("*"))
@@ -28,6 +31,18 @@ def test_path_api_up_push(tmpdir):
     p.push()
 
     mock_api.put_file_native.assert_called_once_with(p._path, Path("test.txt"))
+
+
+def test_path_api_down_get(tmpdir):
+    p = Path(tmpdir) / "test.txt"
+
+    mock_api = mock.MagicMock()
+    p = files.PathAPIDown(p, "abcdefg", mock_api)
+    p.get()
+
+    assert not p.is_file()  # because of mock
+
+    mock_api.get_file.assert_called_once_with("abcdefg", p._path)
 
 
 @pytest.mark.parametrize("filename", [None, "test.txt"])
@@ -49,7 +64,7 @@ def test_downloader(tmpdir):
     down = files.APIDownloader(None)
 
     p = Path(tmpdir) / "test.txt"
-    with (mock.patch("requests.get") as mock_get):
+    with mock.patch("requests.get") as mock_get:
         m_return = mock.MagicMock()
         m_return.content = b"test"
         mock_get.return_value = m_return
@@ -57,4 +72,3 @@ def test_downloader(tmpdir):
         down.get(url, p)
 
     mock_get.assert_called_once()
-

@@ -6,7 +6,18 @@ import requests
 from fetcher.api import worker
 
 
-class PathAPIUp:
+class PathAPIbase:
+    _path: Path
+
+    def __str__(self):
+        return str(self._path)
+
+    def __getattr__(self, attr):
+        # Delegate to the underlying _path object
+        return getattr(self._path, attr)
+
+
+class PathAPIUp(PathAPIbase):
     def __init__(
         self,
         path: str | Path,
@@ -31,18 +42,10 @@ class PathAPIUp:
         """
         return self._path.relative_to(self._path_api)
 
-    def __str__(self):
-        return str(self._path)
-
     def __repr__(self):
         return (
-            f"PathAPIUp({repr(self._path)}, {repr(self._api)})"
-            f"PathAPIUp({repr(self._path)}, {repr(self._api)})"
+            f"PathAPIUp({repr(self._path)}, {repr(self._path_api)}, {repr(self._api)})"
         )
-
-    def __getattr__(self, attr):
-        # Delegate to the underlying _path object
-        return getattr(self._path, attr)
 
     def push(self):
         self._api.put_file_native(self._path, self.path_api_rel)
@@ -56,6 +59,21 @@ class PathAPIUp:
         return (
             type(self)(p, self._path_api, self._api) for p in self._path.rglob(pattern)
         )
+
+
+class PathAPIDown(PathAPIbase):
+    def __init__(self, path: str | Path, file_id: str, api: worker.JobAPI):
+        self._path = Path(path) if not isinstance(path, Path) else path
+        self._file_id = file_id
+        self._api = api
+
+    def __repr__(self):
+        return (
+            f"PathAPIDown({repr(self._path)}, {repr(self._file_id)}, {repr(self._api)})"
+        )
+
+    def get(self):
+        self._api.get_file(self._file_id, self._path)
 
 
 class PathAPItracked(Path):

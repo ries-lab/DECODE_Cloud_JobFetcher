@@ -1,4 +1,5 @@
 docker
+python-dotenv
 requests
 pytest
 psutil

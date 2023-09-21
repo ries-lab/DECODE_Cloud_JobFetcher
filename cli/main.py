@@ -3,10 +3,13 @@ import os
 import time
 from pathlib import Path
 
+import dotenv
 import docker
 
 from fetcher import api, info, io, status
 from fetcher.docker import manager
+
+dotenv.load_dotenv()
 
 TIMEOUT = os.getenv("TIMEOUT", 10)
 TIMEOUT_MONITOR = os.getenv("TIMEOUT_MONITOR", 2)

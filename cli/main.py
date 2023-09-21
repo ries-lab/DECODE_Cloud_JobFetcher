@@ -1,6 +1,5 @@
 import itertools
 import os
-import socket
 import time
 from pathlib import Path
 
@@ -8,7 +7,6 @@ import docker
 
 from fetcher import api, info, io, status
 from fetcher.docker import manager
-
 
 TIMEOUT = os.getenv("TIMEOUT", 10)
 TIMEOUT_MONITOR = os.getenv("TIMEOUT_MONITOR", 2)

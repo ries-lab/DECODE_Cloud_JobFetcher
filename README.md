@@ -2,6 +2,10 @@
 Queries cloud endpoint
 
 ## Usage
+- Copy and modify .env.example
+- Start mock_api (cd to dir, create env) then `uvicorn app.main:app --host 0.0.0.0 --reload`
+- Start docker container as below
+
 
 ## JobFetcher
 ```bash

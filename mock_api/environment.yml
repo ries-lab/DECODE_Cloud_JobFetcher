@@ -1,4 +1,4 @@
-name: mock_worker
+name: mock_api
 
 channels:
   - conda-forge

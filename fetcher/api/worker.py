@@ -33,7 +33,7 @@ class API:
         path.write_bytes(response.content)
 
     def build_file_url(self, file_id: str) -> str:
-        return f"{self.base_url}/files_url/{file_id}"
+        return f"{self.base_url}/file_url/{file_id}"
 
     def _request(self, method: str, endpoint: str, **kwargs):
         url = self.base_url + endpoint
@@ -67,7 +67,7 @@ class JobAPI:
 
     @property
     def file_post_url(self) -> str:
-        return f"{self.job_url}/files"
+        return f"{self.job_url}/file"
 
     def ping(
         self,

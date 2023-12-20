@@ -126,23 +126,23 @@ async def job_get(
     #         meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
     #     )
     # }
-    return {
-        "mock_a6": Job(
-            app=SpecsApp(
-                cmd=None
-            ),
-            handler=SpecsHandler(
-                image_url="mock_decode:0.0.6",
-                files_down={
-                    "config/config.yaml": "config_a6",
-                    "data/beads.mat": "beads_a6",
-                    "data/trafo.mat": "trafo_a6",
-                },
-                files_up={"artifact": "artifact/", "log": "log/", "output": "output/"},
-            ),
-            meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
-        )
-    }
+    # return {
+    #     "mock_a6": Job(
+    #         app=SpecsApp(
+    #             cmd=None
+    #         ),
+    #         handler=SpecsHandler(
+    #             image_url="mock_decode:0.0.6",
+    #             files_down={
+    #                 "config/config.yaml": "config_a6",
+    #                 "data/beads.mat": "beads_a6",
+    #                 "data/trafo.mat": "trafo_a6",
+    #             },
+    #             files_up={"artifact": "artifact/", "log": "log/", "output": "output/"},
+    #         ),
+    #         meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
+    #     )
+    # }
 
 
 @app.post("/jobs/{job_id}/file")

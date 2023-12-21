@@ -19,7 +19,10 @@ path_base = os.getenv("PATH_BASE", "~/temp/decode_cloud/mounts")
 path_base = Path(path_base).expanduser()
 path_host_base = os.getenv("PATH_HOST_BASE")
 
-api_worker = api.worker.API(os.getenv("API_URL"), os.getenv("ACCESS_TOKEN"))
+# ToDo: use AccessTokenAuth
+api_worker = api.worker.API(
+    os.getenv("API_URL"), api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN"))
+)
 worker_info = info.sys.collect()
 
 

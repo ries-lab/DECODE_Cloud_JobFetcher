@@ -3,11 +3,11 @@ from pathlib import Path
 
 import requests
 
-from . import model
+from . import model, token
 
 
 class API:
-    def __init__(self, base_url: str, access_token: str | None = None):
+    def __init__(self, base_url: str, access_token: token.AccessToken | None = None):
         self.base_url = base_url
         self.access_token = access_token
 
@@ -15,7 +15,7 @@ class API:
     def header(self) -> dict[str, Any] | None:
         if self.access_token is None:
             return None
-        return {"Authorization": f"Bearer {self.access_token}"}
+        return {"Authorization": f"Bearer {self.access_token.access_token}"}
 
     def fetch_jobs(self, **kwargs) -> dict[str, model.Job]:
         response = self._request("GET", "/jobs", params=kwargs)

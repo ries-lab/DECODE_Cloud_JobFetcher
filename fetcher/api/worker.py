@@ -27,13 +27,13 @@ class API:
         response.raise_for_status()
 
         # ToDo: check if response is a URL or a path, currently only URL
-        url = response.json()
-        response = requests.get(url)  # shall be public
+        response = response.json()
+        response = requests.request(**response)  # may contain authorization header
         response.raise_for_status()
         path.write_bytes(response.content)
 
     def build_file_url(self, file_id: str) -> str:
-        return f"{self.base_url}/file_url/{file_id}"
+        return f"{self.base_url}/files/{file_id}/url"
 
     def _request(self, method: str, endpoint: str, **kwargs):
         url = self.base_url + endpoint
@@ -67,7 +67,7 @@ class JobAPI:
 
     @property
     def file_post_url(self) -> str:
-        return f"{self.job_url}/file"
+        return f"{self.job_url}/files/url"
 
     def ping(
         self,
@@ -88,14 +88,19 @@ class JobAPI:
         return self._base_api.get_file(file_id, path)
 
     def put_file(self, path: Path, path_api: str | Path | None, file_type: str):
-        f = {"file": (str(path_api), open(path, "rb"))}
-        r = requests.post(
+        # Get file upload pre-signed URL
+        response = requests.post(
             self.file_post_url,
-            params={"path": str(path_api), "type": file_type},
-            files=f,
+            params={"base_path": str(path_api), "type": file_type},
             headers=self._base_api.header,
         )
-        r.raise_for_status()
+        response.raise_for_status()
+
+        # Upload file
+        response = response.json()
+        f = {"file": (str(path_api), open(path, "rb"))}
+        response = requests.request(**response, files=f)
+        response.raise_for_status()
 
     def put_file_native(self, path: Path, path_api: Path):
         if (t := _get_top_level_dir(path_api)) not in self._types:

@@ -12,7 +12,7 @@ async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/file_url/{file_id}")
+@app.get("/files/{file_id}/url")
 async def file_get(file_id) -> str:
     # return presigned public URL
     match file_id:
@@ -30,14 +30,13 @@ async def file_get(file_id) -> str:
             print(file_id)
             raise ValueError(f"Unknown file_id {file_id}")
 
-    return url
+    return {"url": url, "method": "get"}
 
 
 class SpecsHandler(BaseModel):
     image_url: str
     files_down: dict[str, str]
     files_up: dict[str, str]
-    aws_job_def: Any
 
 
 class SpecsApp(BaseModel):
@@ -79,9 +78,9 @@ async def job_get(
                     "--config-dir=/data/config",
                     "--config-name=config",
                     "Paths.experiment=/data/model",
-                    "Paths.logging=/data/log"
+                    "Paths.logging=/data/log",
                 ],
-                "env": {}
+                "env": {},
             },
             "handler": {
                 "image_url": "public.ecr.aws/d2r7a3u1/decode:dev_multiphot_tar",
@@ -89,17 +88,11 @@ async def job_get(
                 "files_down": {
                     "config/config.yaml": "config_file_id",
                     "data/beads.mat": "beads_file_id",
-                    "data/trafo.mat": "trafo_file_id"
+                    "data/trafo.mat": "trafo_file_id",
                 },
-                "files_up": {
-                    "log": "log",
-                    "artifact": "model"
-                }
+                "files_up": {"log": "log", "artifact": "model"},
             },
-            "meta": {
-                "job_id": 9,
-                "date_created": "2023-09-20T14:14:37.596024"
-            }
+            "meta": {"job_id": 9, "date_created": "2023-09-20T14:14:37.596024"},
         }
     }
     # return {
@@ -145,19 +138,14 @@ async def job_get(
     # }
 
 
-@app.post("/jobs/{job_id}/file")
+@app.post("/jobs/{job_id}/files/url")
 async def job_file_post(
     job_id: str,
-    path: str,
     type: Literal["artifact", "log", "output"],
+    base_path: str = "",
     file: UploadFile = File(...),
 ):
-    # put file
-    print(
-        f"Would have uploaded file {file.filename} of type {type} for {job_id}; "
-        f"dumping it to {path}"
-    )
-    return {"filename": file.filename}
+    return {"url": "https://fake_url.com", "method": "put", "data": {}}
 
 
 @app.get("/jobs/{job_id}/status")

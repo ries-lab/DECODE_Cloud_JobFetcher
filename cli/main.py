@@ -45,6 +45,14 @@ while True:
     if len(jobs) >= 2:
         raise ValueError(f"Expected only one job, got {len(jobs)}")
 
+    pinger_pre = status.pinger.SerialPinger(
+        ping=status.status.ConstantStatus(
+            status="preprocessing", ping=api_job.ping
+        ).ping,
+        timeout=TIMEOUT_MONITOR,
+    )
+    pinger_pre.start()
+
     job_id, job = jobs.popitem()
     api_job = api.worker.JobAPI(job_id, api_worker)
 
@@ -94,18 +102,25 @@ while True:
         **kwargs_gpu,
     )
 
-    # setup pinger
-    docker_stat = status.status.DockerStatus(container, ping=api_job.ping)
+    pinger_pre.stop()
 
     # get and keep updating its status
-    while True:
-        docker_stat.ping()
-        if docker_stat.exited:
-            print(container.logs())
-            break
-
-        time.sleep(TIMEOUT_MONITOR)
+    pinger_run = status.pinger.SerialPinger(
+        ping=status.status.DockerStatus(container, ping=api_job.ping).ping,
+        timeout=TIMEOUT_MONITOR,
+    )
+    pinger_run.start()
+    pinger_run.stop()
+    print(container.logs())
 
     # upload result
+    pinger_post = status.pinger.SerialPinger(
+        ping=status.status.ConstantStatus(
+            status="postprocessing", ping=api_job.ping
+        ).ping,
+        timeout=TIMEOUT_MONITOR,
+    )
+    pinger_post.start()
     p_upload = itertools.chain(*[p.rglob("*") for p in handler.files_up])
     [p.push() for p in p_upload if p.is_file()]
+    pinger_post.stop()

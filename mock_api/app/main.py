@@ -166,7 +166,7 @@ async def job_status_get(job_id):
 @app.put("/jobs/{job_id}/status")
 async def job_status_put(
     job_id: str,
-    status: Literal["running", "stopped", "error"],
+    status: Literal["preprocessing", "running", "postprocessing", "finished", "error"],
     runtime_details: str | None = None,
 ):
     return {

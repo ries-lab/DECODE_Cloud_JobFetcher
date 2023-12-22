@@ -71,7 +71,9 @@ class JobAPI:
 
     def ping(
         self,
-        status: Literal["running", "stopped", "error"],
+        status: Literal[
+            "preprocessing", "running", "postprocessing", "finished", "error"
+        ],
         exit_code: int | None,
         body: str | None,
     ):

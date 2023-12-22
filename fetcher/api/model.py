@@ -19,7 +19,16 @@ class SpecsMeta(BaseModel):
         extra = "allow"
 
 
+class SpecsHardware(BaseModel):
+    cpu_cores: int | None = None
+    memory: int | None = None
+    gpu_model: str | None = None
+    gpu_archi: str | None = None
+    gpu_mem: int | None = None
+
+
 class Job(BaseModel):
     app: SpecsApp
     handler: SpecsHandler
     meta: SpecsMeta
+    hardware: SpecsHardware

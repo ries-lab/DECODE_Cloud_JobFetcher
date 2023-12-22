@@ -49,10 +49,19 @@ class SpecsMeta(BaseModel):
         extra = "allow"
 
 
+class SpecsHardware(BaseModel):
+    cpu_cores: int | None = None
+    memory: int | None = None
+    gpu_model: str | None = None
+    gpu_archi: str | None = None
+    gpu_mem: int | None = None
+
+
 class Job(BaseModel):
     app: SpecsApp
     handler: SpecsHandler
     meta: SpecsMeta
+    hardware: SpecsHardware
 
     class Config:
         orm_mode = True
@@ -93,6 +102,7 @@ async def job_get(
                 "files_up": {"log": "log", "artifact": "model"},
             },
             "meta": {"job_id": 9, "date_created": "2023-09-20T14:14:37.596024"},
+            "hardware": {},
         }
     }
     # return {

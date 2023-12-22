@@ -73,14 +73,16 @@ class JobAPI:
         self,
         status: Literal["running", "stopped", "error"],
         exit_code: int | None,
-        body: str,
+        body: str | None,
     ):
+        runtime_details = None
+        if exit_code is not None:
+            runtime_details = f"exit_code: {exit_code} "
+        if body is not None:
+            runtime_details = (runtime_details or "") + f"details: {body}"
         r = requests.put(
             self.status_url,
-            params={
-                "status": status,
-                "runtime_details": f"exit_code: {exit_code}, details: {body}",
-            },
+            params={"status": status, "runtime_details": runtime_details},
             headers=self._base_api.header,
         )
         r.raise_for_status()

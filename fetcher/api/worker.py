@@ -77,8 +77,10 @@ class JobAPI:
     ):
         r = requests.put(
             self.status_url,
-            params={"status": status},
-            json={"exit_code": exit_code, "status_body": body},
+            params={
+                "status": status,
+                "runtime_details": f"exit_code: {exit_code}, details: {body}",
+            },
             headers=self._base_api.header,
         )
         r.raise_for_status()

@@ -163,18 +163,14 @@ async def job_status_get(job_id):
     return {"message": f"The job with ID {job_id}."}
 
 
-class StatusBody(BaseModel):
-    status_body: str | None
-
-
 @app.put("/jobs/{job_id}/status")
 async def job_status_put(
     job_id: str,
     status: Literal["running", "stopped", "error"],
-    status_body: StatusBody | None = None,
+    runtime_details: str | None = None,
 ):
     return {
         "job_id": job_id,
         "status": status,
-        "status_body": status_body.status_body,
+        "runtime_details": runtime_details,
     }

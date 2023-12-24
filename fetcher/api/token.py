@@ -50,7 +50,7 @@ class AccessTokenAuth(AccessToken):
                 "USERNAME": self._username,
                 "PASSWORD": self._password,
             },
-            ClientId=self._cognito_client,
+            ClientId=self._client_id,
         )
         self._access_token = response["AuthenticationResult"]["IdToken"]
         self._expiry = datetime.datetime.utcnow() + datetime.timedelta(

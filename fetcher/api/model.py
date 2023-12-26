@@ -5,6 +5,9 @@ from pydantic import BaseModel
 
 class SpecsHandler(BaseModel):
     image_url: str
+    image_name: str | None = None
+    image_version: str | None = None
+    entrypoint: str | None = None
     files_down: Path | dict[str, str]
     files_up: Path | dict[str, str]
 

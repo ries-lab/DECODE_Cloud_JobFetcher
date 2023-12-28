@@ -1,6 +1,7 @@
 from typing import Any, Literal
 from pathlib import Path
 
+import os
 import requests
 
 from . import model, token
@@ -51,8 +52,6 @@ def _get_top_level_dir(path) -> str | None:
 
 
 class JobAPI:
-    _types = {"artifact", "data", "config", "log", "output"}
-
     def __init__(self, job_id: str, base_api: API):
         self.job_id = job_id
         self._base_api = base_api
@@ -97,23 +96,18 @@ class JobAPI:
         # Get file upload pre-signed URL
         response = requests.post(
             self.file_post_url,
-            params={"base_path": str(path_api), "type": file_type},
+            params={"base_path": str(os.path.dirname(path_api)), "type": file_type},
             headers=self._base_api.header,
         )
         response.raise_for_status()
 
         # Upload file
         response = response.json()
-        f = {"file": (str(path_api), open(path, "rb"))}
+        f = {"file": (str(os.path.split(path_api)[-1]), open(path, "rb"))}
         response = requests.request(**response, files=f)
         response.raise_for_status()
 
-    def put_file_native(self, path: Path, path_api: Path):
-        if (t := _get_top_level_dir(path_api)) not in self._types:
-            raise ValueError(
-                f"Top level directory of {path_api} must be one of {self._types}"
-            )
-        # strip away top level dir
-        path_api = path_api.relative_to(t)
-
-        return self.put_file(path, path_api, file_type=t)
+    def put_file_native(
+        self, path: Path, f_type: Literal["artifact", "output", "log"], path_api: Path
+    ):
+        return self.put_file(path, path_api, file_type=f_type)

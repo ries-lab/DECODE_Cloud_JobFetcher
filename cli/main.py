@@ -60,8 +60,8 @@ while True:
 
     handler = job.handler
     handler.files_up = [
-        io.files.PathAPIUp(path_job / p, path_job, api_job)
-        for p_api, p in handler.files_up.items()
+        io.files.PathAPIUp(path_job / p, f_type, path_job, api_job)
+        for f_type, p in handler.files_up.items()
     ]
     handler.files_down = [
         io.files.PathAPIDown(path_job / p, p_id, api_job)

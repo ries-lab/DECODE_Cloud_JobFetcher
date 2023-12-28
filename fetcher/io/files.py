@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from pathlib import Path
+from typing import Literal
 
 import requests
 
@@ -21,6 +22,7 @@ class PathAPIUp(PathAPIbase):
     def __init__(
         self,
         path: str | Path,
+        f_type: Literal["artifact", "output", "log"],
         path_api: str,
         api: worker.JobAPI,
     ):
@@ -32,6 +34,7 @@ class PathAPIUp(PathAPIbase):
             api: api backend
         """
         self._path = Path(path) if not isinstance(path, Path) else path
+        self._f_type = f_type
         self._path_api = Path(path_api) if not isinstance(path_api, Path) else path_api
         self._api = api
 
@@ -43,23 +46,23 @@ class PathAPIUp(PathAPIbase):
         return self._path.relative_to(self._path_api)
 
     def __repr__(self):
-        return (
-            f"PathAPIUp({repr(self._path)}, {repr(self._path_api)}, {repr(self._api)})"
-        )
+        return f"PathAPIUp({repr(self._path)}, {repr(self._f_type)}, {repr(self._path_api)}, {repr(self._api)})"
 
     def push(self):
         if self._path.is_dir():
             raise NotImplementedError("Directory upload not implemented")
-        self._api.put_file_native(self._path, self.path_api_rel)
+        self._api.put_file_native(self._path, self._f_type, self.path_api_rel)
 
     def glob(self, pattern: str):
         return (
-            type(self)(p, self._path_api, self._api) for p in self._path.glob(pattern)
+            type(self)(p, self._f_type, self._path_api, self._api)
+            for p in self._path.glob(pattern)
         )
 
     def rglob(self, pattern: str):
         return (
-            type(self)(p, self._path_api, self._api) for p in self._path.rglob(pattern)
+            type(self)(p, self._f_type, self._path_api, self._api)
+            for p in self._path.rglob(pattern)
         )
 
 

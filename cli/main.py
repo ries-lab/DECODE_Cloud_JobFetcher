@@ -29,8 +29,6 @@ worker_info = info.sys.collect()
 while True:
     jobs = api_worker.fetch_jobs(
         limit=1,
-        hostname=worker_info["host"]["hostname"],
-        environment="local",
         cpu_cores=worker_info["sys"]["cores"],
         memory=worker_info["sys"]["memory"],
         gpu_model=worker_info["gpu"][0]["model"] if worker_info["gpu"] else None,
@@ -45,6 +43,9 @@ while True:
     if len(jobs) >= 2:
         raise ValueError(f"Expected only one job, got {len(jobs)}")
 
+    job_id, job = jobs.popitem()
+    api_job = api.worker.JobAPI(job_id, api_worker)
+
     pinger_pre = status.pinger.SerialPinger(
         ping=status.status.ConstantStatus(
             status="preprocessing", ping=api_job.ping
@@ -52,9 +53,6 @@ while True:
         timeout=TIMEOUT_MONITOR,
     )
     pinger_pre.start()
-
-    job_id, job = jobs.popitem()
-    api_job = api.worker.JobAPI(job_id, api_worker)
 
     path_job = path_base / job_id
 

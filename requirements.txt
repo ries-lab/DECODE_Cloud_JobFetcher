@@ -7,3 +7,4 @@ gputil
 loguru
 pydantic
 boto3
+fastapi

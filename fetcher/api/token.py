@@ -21,7 +21,7 @@ class AccessTokenFixed(AccessToken):
 
 class AccessTokenAuth(AccessToken):
     def __init__(
-        self, client_id: str, username: str, password: str, min_validity: int = 300
+        self, client_id: str, region: str, username: str, password: str, min_validity: int = 300
     ):
         """Token that is refreshed automatically when it is close to expiry."""
         self._client_id = client_id
@@ -30,7 +30,7 @@ class AccessTokenAuth(AccessToken):
         self._access_token = None
         self._expiry = None
         self._min_validity = min_validity
-        self._cognito_client = boto3.client("cognito-idp")
+        self._cognito_client = boto3.client("cognito-idp", region_name=region)
 
     @property
     def access_token(self) -> str:

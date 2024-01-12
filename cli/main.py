@@ -13,17 +13,24 @@ from fetcher.docker import manager
 
 dotenv.load_dotenv(override=True)
 
-TIMEOUT = os.getenv("TIMEOUT", 10)
-TIMEOUT_MONITOR = os.getenv("TIMEOUT_MONITOR", 2)
+TIMEOUT_JOB = int(os.getenv("TIMEOUT_JOB", 10))
+TIMEOUT_STATUS = int(os.getenv("TIMEOUT_STATUS", 10))
 
 path_base = os.getenv("PATH_BASE", "~/temp/decode_cloud/mounts")
 path_base = Path(path_base).expanduser()
 path_host_base = os.getenv("PATH_HOST_BASE")
 
-# ToDo: use AccessTokenAuth
 api_worker = api.worker.API(
-    os.getenv("API_URL"), api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN"))
+    os.getenv("API_URL"), api.token.AccessTokenAuth(
+        client_id=os.getenv("COGNITO_CLIENT_ID"),
+        region=os.getenv("COGNITO_REGION"),
+        username=os.getenv("USERNAME"),
+        password=os.getenv("PASSWORD"),
+        )
 )
+# api_worker = api.worker.API(
+#     os.getenv("API_URL"), api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN"))
+# )
 worker_info = info.sys.collect()
 
 
@@ -39,8 +46,8 @@ while True:
         )
 
         if len(jobs) == 0:
-            logger.info(f"No job found. Sleeping for {TIMEOUT} seconds.")
-            time.sleep(TIMEOUT)
+            logger.info(f"No job found. Sleeping for {TIMEOUT_JOB} seconds.")
+            time.sleep(TIMEOUT_JOB)
             continue
 
         if len(jobs) >= 2:
@@ -49,11 +56,11 @@ while True:
         job_id, job = jobs.popitem()
         api_job = api.worker.JobAPI(job_id, api_worker)
 
-        pinger_pre = status.pinger.SerialPinger(
+        pinger_pre = status.pinger.ParallelPinger(
             ping=status.status.ConstantStatus(
                 status="preprocessing", ping=api_job.ping
             ).ping,
-            timeout=TIMEOUT_MONITOR,
+            timeout=TIMEOUT_STATUS,
         )
         pinger_pre.start()
 
@@ -95,7 +102,7 @@ while True:
             else {}
         )
         container = docker_manager.auto_run(
-            command=job.app.cmd,
+            command=job.app.cmd + ["> /data/log.log"],
             environment=job.app.env,
             mounts=mounts,
             detach=True,
@@ -108,18 +115,18 @@ while True:
         # get and keep updating its status
         pinger_run = status.pinger.SerialPinger(
             ping=status.status.DockerStatus(container, ping=api_job.ping).ping,
-            timeout=TIMEOUT_MONITOR,
+            timeout=TIMEOUT_STATUS,
         )
         pinger_run.start()
         pinger_run.stop()
         print(container.logs())
 
         # upload result
-        pinger_post = status.pinger.SerialPinger(
+        pinger_post = status.pinger.ParallelPinger(
             ping=status.status.ConstantStatus(
                 status="postprocessing", ping=api_job.ping
             ).ping,
-            timeout=TIMEOUT_MONITOR,
+            timeout=TIMEOUT_STATUS,
         )
         pinger_post.start()
         p_upload = itertools.chain(*[p.rglob("*") for p in handler.files_up])

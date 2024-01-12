@@ -1,6 +1,13 @@
 import abc
 import boto3
 import datetime
+import requests
+
+
+def get_access_info(api_url):
+    response = requests.get(f"{api_url}/access_info")
+    response.raise_for_status()
+    return response.json()
 
 
 class AccessToken(abc.ABC):
@@ -21,7 +28,12 @@ class AccessTokenFixed(AccessToken):
 
 class AccessTokenAuth(AccessToken):
     def __init__(
-        self, client_id: str, region: str, username: str, password: str, min_validity: int = 300
+        self,
+        client_id: str,
+        region: str,
+        username: str,
+        password: str,
+        min_validity: int = 300,
     ):
         """Token that is refreshed automatically when it is close to expiry."""
         self._client_id = client_id

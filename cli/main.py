@@ -20,13 +20,15 @@ path_base = os.getenv("PATH_BASE", "~/temp/decode_cloud/mounts")
 path_base = Path(path_base).expanduser()
 path_host_base = os.getenv("PATH_HOST_BASE")
 
+access_info = api.token.get_access_info(os.getenv("API_URL"))
 api_worker = api.worker.API(
-    os.getenv("API_URL"), api.token.AccessTokenAuth(
-        client_id=os.getenv("COGNITO_CLIENT_ID"),
-        region=os.getenv("COGNITO_REGION"),
+    os.getenv("API_URL"),
+    api.token.AccessTokenAuth(
+        client_id=access_info["client_id"],
+        region=access_info["region"],
         username=os.getenv("USERNAME"),
         password=os.getenv("PASSWORD"),
-        )
+    ),
 )
 # api_worker = api.worker.API(
 #     os.getenv("API_URL"), api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN"))
@@ -83,7 +85,7 @@ while True:
         path_mnt = path_host_base / path_job.relative_to(path_base)
         mounts = [
             docker.types.Mount(
-                "/data",
+                "/files",
                 str(path_mnt),
                 type="bind",
                 read_only=False,
@@ -102,7 +104,7 @@ while True:
             else {}
         )
         container = docker_manager.auto_run(
-            command=job.app.cmd + ["> /data/log.log"],
+            command=job.app.cmd,
             environment=job.app.env,
             mounts=mounts,
             detach=True,

@@ -20,7 +20,7 @@ path_base = os.getenv("PATH_BASE", "~/temp/decode_cloud/mounts")
 path_base = Path(path_base).expanduser()
 path_host_base = os.getenv("PATH_HOST_BASE")
 
-access_info = api.token.get_access_info(os.getenv("API_URL"))
+access_info = api.token.get_access_info(os.getenv("API_URL"))["cognito"]
 api_worker = api.worker.API(
     os.getenv("API_URL"),
     api.token.AccessTokenAuth(
@@ -121,7 +121,10 @@ while True:
         )
         pinger_run.start()
         pinger_run.stop()
-        print(container.logs())
+        res = container.wait()
+        if res["StatusCode"] != 0:
+            api_job.ping(status="failed", exit_code=res["StatusCode"], body=res)
+            continue
 
         # upload result
         pinger_post = status.pinger.ParallelPinger(
@@ -134,6 +137,8 @@ while True:
         p_upload = itertools.chain(*[p.rglob("*") for p in handler.files_up])
         [p.push() for p in p_upload if p.is_file()]
         pinger_post.stop()
+
+        api_job.ping(status="finished", exit_code=0, body="")
 
     except HTTPException as e:
         if e.status_code == 404:

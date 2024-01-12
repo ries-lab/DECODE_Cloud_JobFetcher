@@ -25,6 +25,9 @@ class Manager:
         detach: bool = True,
         **kwargs
     ):
+        if isinstance(command, list):
+            command = " ".join(command)
+        command = ["/bin/sh", "-c", command]
         return self._client.containers.run(
             self.image,
             command=command,

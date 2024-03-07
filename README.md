@@ -1,5 +1,5 @@
 # DECODE_Cloud_JobFetcher
-Code for the workers of DECODE OpenCloud.
+Code for the workers of ![DECODE OpenCloud](https://github.com/ries-lab/DECODE_Cloud_Documentation).
 
 The local workers run this as a Docker container to process jobs, by communicating with the ![DECODE OpenCloud worker-facing API](https://github.com/ries-lab/DECODE_Cloud_WorkerAPI):
  - Fetch new jobs for which they have enough resources.

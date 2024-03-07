@@ -123,7 +123,10 @@ while True:
         pinger_run.stop()
         res = container.wait()
         if res["StatusCode"] != 0:
-            api_job.ping(status="error", exit_code=res["StatusCode"], body=res)
+            logs = container.logs()
+            api_job.ping(
+                status="error", exit_code=res["StatusCode"], body=f"Logs:\n{str(logs)}"
+            )
             continue
 
         # upload result

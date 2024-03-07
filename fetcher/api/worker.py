@@ -80,10 +80,10 @@ class JobAPI:
         if exit_code is not None:
             runtime_details = f"exit_code: {exit_code} "
         if body is not None:
-            runtime_details = (runtime_details or "") + f"details: {body}"
+            runtime_details = (runtime_details or "") + body
         r = requests.put(
             self.status_url,
-            params={"status": status, "runtime_details": runtime_details},
+            params={"status": status, "runtime_details": body},
             headers=self._base_api.header,
         )
         r.raise_for_status()

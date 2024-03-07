@@ -6,6 +6,7 @@ The local workers run this as a Docker container to process jobs, by communicati
  - Download the job input files.
  - Run the job's Docker container.
  - Upload the job output files.
+
 Additionally, while processing the jobs, they send status updates (new status or keep-alive signals).  
 The ![cloud workers](https://github.com/ries-lab/DECODE_AWS_Infrastructure/tree/main/stack/worker/runtime/jobs_handler) use specific functions from this package to do the above steps in separate AWS Lambda functions.
 

@@ -6,10 +6,12 @@ from loguru import logger
 
 class Status:
     def __init__(self, ping: Callable):
+        """Store/check the status of a job and ping it to an API."""
         self._ping = ping
 
     @abstractmethod
     def update(self):
+        """Update the status."""
         raise NotImplementedError
 
     @abstractmethod
@@ -20,6 +22,10 @@ class Status:
 
 class ConstantStatus(Status):
     def __init__(self, status: str, ping: Callable):
+        """A status that never changes.
+        Useful e.g. while pre-processing a job, where until the job is started, the status is always "preprocessing".
+        :param status: The status to return.
+        """
         super().__init__(ping=ping)
         self._status = status
 
@@ -33,6 +39,9 @@ class ConstantStatus(Status):
 
 class DockerStatus(Status):
     def __init__(self, container, ping: Callable, update_on_ping: bool = True):
+        """A status that is based on a Docker container.
+        When running a Docker container, the status is checked to see if it is running, exited, or exited with an error.
+        :param container: The container to check."""
         super().__init__(ping=ping)
 
         self._container = container

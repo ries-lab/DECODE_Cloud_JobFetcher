@@ -1,13 +1,14 @@
 from typing import Any, Literal
 from pathlib import Path
 
+import os
 import requests
 
-from . import model
+from . import model, token
 
 
 class API:
-    def __init__(self, base_url: str, access_token: str | None = None):
+    def __init__(self, base_url: str, access_token: token.AccessToken | None = None):
         self.base_url = base_url
         self.access_token = access_token
 
@@ -15,7 +16,7 @@ class API:
     def header(self) -> dict[str, Any] | None:
         if self.access_token is None:
             return None
-        return {"Authorization": f"Bearer {self.access_token}"}
+        return {"Authorization": f"Bearer {self.access_token.access_token}"}
 
     def fetch_jobs(self, **kwargs) -> dict[str, model.Job]:
         response = self._request("GET", "/jobs", params=kwargs)
@@ -27,13 +28,13 @@ class API:
         response.raise_for_status()
 
         # ToDo: check if response is a URL or a path, currently only URL
-        url = response.json()
-        response = requests.get(url)  # shall be public
+        response = response.json()
+        response = requests.request(**response)  # may contain authorization header
         response.raise_for_status()
         path.write_bytes(response.content)
 
     def build_file_url(self, file_id: str) -> str:
-        return f"{self.base_url}/file_url/{file_id}"
+        return f"{self.base_url}/files/{file_id}/url"
 
     def _request(self, method: str, endpoint: str, **kwargs):
         url = self.base_url + endpoint
@@ -51,8 +52,6 @@ def _get_top_level_dir(path) -> str | None:
 
 
 class JobAPI:
-    _types = {"artifact", "data", "config", "log", "output"}
-
     def __init__(self, job_id: str, base_api: API):
         self.job_id = job_id
         self._base_api = base_api
@@ -67,18 +66,24 @@ class JobAPI:
 
     @property
     def file_post_url(self) -> str:
-        return f"{self.job_url}/file"
+        return f"{self.job_url}/files/url"
 
     def ping(
         self,
-        status: Literal["running", "stopped", "error"],
+        status: Literal[
+            "preprocessing", "running", "postprocessing", "finished", "error"
+        ],
         exit_code: int | None,
-        body: str,
+        body: str | None,
     ):
+        runtime_details = None
+        if exit_code is not None:
+            runtime_details = f"exit_code: {exit_code} "
+        if body is not None:
+            runtime_details = (runtime_details or "") + body
         r = requests.put(
             self.status_url,
-            params={"status": status},
-            json={"exit_code": exit_code, "status_body": body},
+            params={"status": status, "runtime_details": body},
             headers=self._base_api.header,
         )
         r.raise_for_status()
@@ -88,21 +93,21 @@ class JobAPI:
         return self._base_api.get_file(file_id, path)
 
     def put_file(self, path: Path, path_api: str | Path | None, file_type: str):
-        f = {"file": (str(path_api), open(path, "rb"))}
-        r = requests.post(
+        # Get file upload pre-signed URL
+        response = requests.post(
             self.file_post_url,
-            params={"path": str(path_api), "type": file_type},
-            files=f,
+            params={"base_path": str(os.path.dirname(path_api)), "type": file_type},
             headers=self._base_api.header,
         )
-        r.raise_for_status()
+        response.raise_for_status()
 
-    def put_file_native(self, path: Path, path_api: Path):
-        if (t := _get_top_level_dir(path_api)) not in self._types:
-            raise ValueError(
-                f"Top level directory of {path_api} must be one of {self._types}"
-            )
-        # strip away top level dir
-        path_api = path_api.relative_to(t)
+        # Upload file
+        response = response.json()
+        f = {"file": (str(os.path.split(path_api)[-1]), open(path, "rb"))}
+        response = requests.request(**response, files=f)
+        response.raise_for_status()
 
-        return self.put_file(path, path_api, file_type=t)
+    def put_file_native(
+        self, path: Path, f_type: Literal["artifact", "output", "log"], path_api: Path
+    ):
+        return self.put_file(path, path_api, file_type=f_type)

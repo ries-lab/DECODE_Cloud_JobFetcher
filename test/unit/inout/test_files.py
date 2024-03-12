@@ -14,21 +14,24 @@ def test_path_api_up_construction(delegate, tmpdir):
         for p in ["a.txt", "b.txt", "c.txt"]
     ]
 
-    p = files.PathAPIUp(Path(tmpdir), Path(""), None)
+    p = files.PathAPIUp(Path(tmpdir), "output", Path(""), None)
     p_files = list(getattr(p, delegate)("*"))
 
     for p in p_files:
         assert isinstance(p, files.PathAPIUp)
 
 
-@pytest.mark.parametrize("path,path_api,expected", [
-    ("/a/b/c/d.txt", "/a/b/c", "d.txt"),
-    ("/a/b/c/d.txt", "/a/b", "c/d.txt"),
-])
+@pytest.mark.parametrize(
+    "path,path_api,expected",
+    [
+        ("/a/b/c/d.txt", "/a/b/c", "d.txt"),
+        ("/a/b/c/d.txt", "/a/b", "c/d.txt"),
+    ],
+)
 def test_path_api_up_relative(path, path_api, expected):
     path = Path(path)
 
-    p = files.PathAPIUp(path, path_api, mock.MagicMock())
+    p = files.PathAPIUp(path, "output", path_api, mock.MagicMock())
     assert str(p.path_api_rel) == expected
 
 
@@ -38,10 +41,12 @@ def test_path_api_up_push(tmpdir):
 
     mock_api = mock.MagicMock()
 
-    p = files.PathAPIUp(p, tmpdir, mock_api)
+    p = files.PathAPIUp(p, "output", tmpdir, mock_api)
     p.push()
 
-    mock_api.put_file_native.assert_called_once_with(p._path, Path("test.txt"))
+    mock_api.put_file_native.assert_called_once_with(
+        p._path, "output", Path("test.txt")
+    )
 
 
 def test_path_api_down_get(tmpdir):

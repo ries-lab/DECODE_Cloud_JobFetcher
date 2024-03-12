@@ -1,5 +1,3 @@
-
-
 class API:
     def __init__(self, url: str):
         self.url = url
@@ -15,7 +13,7 @@ class JobAPI(API):
 
     @property
     def file(self):
-        return self / "file"
+        return self / "files" / "url"
 
     @property
     def status(self):

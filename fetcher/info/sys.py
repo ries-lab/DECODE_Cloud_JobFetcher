@@ -34,7 +34,7 @@ def collect_sys() -> dict:
     return {
         "architecture": platform.machine(),
         "cores": os.cpu_count(),
-        "memory": psutil.virtual_memory().total,
+        "memory": psutil.virtual_memory().total >> 20,
     }
 
 
@@ -43,7 +43,7 @@ def collect_gpu() -> list[dict]:
     return [
         {
             "model": g.name,
-            "memory": g.memoryTotal * 1e6,
+            "memory": g.memoryTotal,
         }
         for g in gpus
     ]

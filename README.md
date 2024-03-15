@@ -26,6 +26,8 @@ Copy the `.env.example` file to a `.env` file at the root of the directory and d
     - `TIMOUT_STATUS`: how often (in seconds) to send a keep-alive signal while processing the job.
 #### Build the Docker image
 `docker build -t jobfetcher .`
+#### Install the nvidia-container-toolkit
+[See here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) to run GPU jobs
 #### Run the Docker container
 `docker run --gpus all -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway jobfetcher:latest`, where:
  - `<PATH_HOST_BASE>` and `<PATH_BASE>` are set as above.

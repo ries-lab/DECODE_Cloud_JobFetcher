@@ -40,7 +40,6 @@ class Manager:
         )
 
     def pull(self):
-        try:
-            self._client.images.get(self.image)
-        except docker.errors.ImageNotFound:
-            self._client.images.pull(self.image)
+        # always pull: if the image is already present and up-to-date,
+        # it will be a no-op taking little time
+        self._client.images.pull(self.image)

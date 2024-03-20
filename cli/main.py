@@ -126,12 +126,6 @@ while True:
         pinger_run.start()
         pinger_run.stop()
         res = container.wait()
-        if res["StatusCode"] != 0:
-            logs = container.logs()
-            api_job.ping(
-                status="error", exit_code=res["StatusCode"], body=f"Logs:\n{str(logs)}"
-            )
-            continue
 
         # upload result
         pinger_post = status.pinger.ParallelPinger(
@@ -145,7 +139,11 @@ while True:
         [p.push() for p in p_upload if p.is_file()]
         pinger_post.stop()
 
-        api_job.ping(status="finished", exit_code=0, body="")
+        if res["StatusCode"] == 0:
+            api_job.ping(status="finished", exit_code=0, body="")
+        else:
+            logs = f"Logs:\n{str(logs)}"
+            api_job.ping(status="error", exit_code=res["StatusCode"], body=logs)
 
     except HTTPException as e:
         if e.status_code == 404:

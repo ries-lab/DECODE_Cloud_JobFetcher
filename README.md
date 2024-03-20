@@ -29,9 +29,10 @@ Copy the `.env.example` file to a `.env` file at the root of the directory and d
 #### Install the nvidia-container-toolkit
 [See here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) to run GPU jobs
 #### Run the Docker container
-`docker run --gpus all -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway jobfetcher:latest`, where:
+`docker run --gpus '"device=0"' -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway jobfetcher:latest`, where:
  - `<PATH_HOST_BASE>` and `<PATH_BASE>` are set as above.
  - `--add-host=host.docker.internal:host-gateway jobfetcher:latest` is required only when running Linux.
+ - The `--gpus '"device=0"'` option specifies which GPUs the worker should be able to use. `--gpus all` selects all GPUs, but you typically want to select which GPU to reserve, and if you have many, run multiple workers each with one reserved GPU.
 
 ## Test locally
 - Start mock_api (cd to dir, create env) then `uvicorn app.main:app --host 0.0.0.0 --reload`.

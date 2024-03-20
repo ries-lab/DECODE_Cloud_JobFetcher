@@ -151,7 +151,7 @@ while True:
             logger.warning(
                 f"Job {job_id} not found; it was probably deleted by the user."
             )
-            if container:
+            if container and container.status == "running":
                 container.kill()
         else:
             raise e

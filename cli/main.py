@@ -6,6 +6,7 @@ from pathlib import Path
 
 import docker
 import dotenv
+import GPUtil
 from loguru import logger
 
 from fetcher import api, info, io, status
@@ -97,7 +98,10 @@ while True:
         kwargs_gpu = (
             {
                 "device_requests": [
-                    docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
+                    docker.types.DeviceRequest(
+                        device_ids=[gpu.uuid for gpu in GPUtil.getGPUs()],
+                        capabilities=[["gpu"]],
+                    )
                 ],
             }
             if worker_info["gpu"]

@@ -43,7 +43,7 @@ def collect_gpu() -> list[dict]:
     return [
         {
             "model": g.name,
-            "memory": g.memoryTotal,
+            "memory": int(g.memoryTotal),
         }
         for g in gpus
     ]

@@ -1,8 +1,8 @@
 import itertools
 import os
 import time
-from fastapi import HTTPException
 from pathlib import Path
+from requests.exceptions import HTTPError
 
 import docker
 import dotenv
@@ -145,11 +145,13 @@ while True:
             logs = f"Logs:\n{str(logs)}"
             api_job.ping(status="error", exit_code=res["StatusCode"], body=logs)
 
-    except HTTPException as e:
-        if e.status_code == 404:
+    except HTTPError as e:
+        if e.response.status_code == 404:
             logger.warning(
                 f"Job {job_id} not found; it was probably deleted by the user."
             )
             if container:
                 container.kill()
             continue
+        else:
+            raise e

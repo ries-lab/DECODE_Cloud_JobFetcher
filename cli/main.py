@@ -1,5 +1,6 @@
 import itertools
 import os
+import shutil
 import time
 from pathlib import Path
 from requests.exceptions import HTTPError
@@ -152,6 +153,7 @@ while True:
             )
             if container:
                 container.kill()
-            continue
         else:
             raise e
+
+    shutil.rmtree(path_job)

@@ -2,9 +2,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Literal
 
-import requests
-
 from fetcher.api import worker
+from fetcher.session import session
 
 
 class PathAPIbase:
@@ -125,8 +124,7 @@ class APIUploader(Uploader):
     def put(self, path: Path, type: str, path_api: str | None = None):
         path_api = path.stem if path_api is None else path_api
         f = {"file": (path_api, open(path, "rb"))}
-        r = requests.post(self._url, params={"path": path_api, "type": type}, files=f)
-        r.raise_for_status()
+        r = session.post(self._url, params={"path": path_api, "type": type}, files=f)
 
 
 class Downloader:
@@ -142,8 +140,7 @@ class Downloader:
 
 class APIDownloader(Downloader):
     def get(self, url: str, path: Path):
-        r = requests.get(url, allow_redirects=True)
-        r.raise_for_status()
+        r = session.get(url, allow_redirects=True)
 
         path = path if path is not None else self._path
         with path.open("wb") as f:

@@ -1,12 +1,12 @@
 import abc
 import boto3
 import datetime
-import requests
+
+from fetcher.session import session
 
 
 def get_access_info(api_url):
-    response = requests.get(f"{api_url}/access_info")
-    response.raise_for_status()
+    response = session.get(f"{api_url}/access_info")
     return response.json()
 
 

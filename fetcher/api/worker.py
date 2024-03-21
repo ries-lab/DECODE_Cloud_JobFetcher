@@ -2,9 +2,9 @@ from typing import Any, Literal
 from pathlib import Path
 
 import os
-import requests
 
 from . import model, token
+from fetcher.session import session
 
 
 class API:
@@ -24,13 +24,11 @@ class API:
 
     def get_file(self, file_id: str, path: Path):
         url_getter = self.build_file_url(file_id)
-        response = requests.get(url_getter, headers=self.header)
-        response.raise_for_status()
+        response = session.get(url_getter, headers=self.header)
 
         # ToDo: check if response is a URL or a path, currently only URL
         response = response.json()
-        response = requests.request(**response)  # may contain authorization header
-        response.raise_for_status()
+        response = session.request(**response)  # may contain authorization header
         path.write_bytes(response.content)
 
     def build_file_url(self, file_id: str) -> str:
@@ -38,8 +36,7 @@ class API:
 
     def _request(self, method: str, endpoint: str, **kwargs):
         url = self.base_url + endpoint
-        response = requests.request(method, url, headers=self.header, **kwargs)
-        response.raise_for_status()
+        response = session.request(method, url, headers=self.header, **kwargs)
         return response
 
 
@@ -81,12 +78,11 @@ class JobAPI:
             runtime_details = f"exit_code: {exit_code} "
         if body is not None:
             runtime_details = (runtime_details or "") + body
-        r = requests.put(
+        r = session.put(
             self.status_url,
             params={"status": status, "runtime_details": body},
             headers=self._base_api.header,
         )
-        r.raise_for_status()
         return r
 
     def get_file(self, file_id: str, path: Path):
@@ -94,18 +90,16 @@ class JobAPI:
 
     def put_file(self, path: Path, path_api: str | Path | None, file_type: str):
         # Get file upload pre-signed URL
-        response = requests.post(
+        response = session.post(
             self.file_post_url,
             params={"base_path": str(os.path.dirname(path_api)), "type": file_type},
             headers=self._base_api.header,
         )
-        response.raise_for_status()
 
         # Upload file
         response = response.json()
         f = {"file": (str(os.path.split(path_api)[-1]), open(path, "rb"))}
-        response = requests.request(**response, files=f)
-        response.raise_for_status()
+        response = session.request(**response, files=f)
 
     def put_file_native(
         self, path: Path, f_type: Literal["artifact", "output", "log"], path_api: Path

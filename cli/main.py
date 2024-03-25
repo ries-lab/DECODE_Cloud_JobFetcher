@@ -143,7 +143,9 @@ while True:
         if res["StatusCode"] == 0:
             api_job.ping(status="finished", exit_code=0, body="")
         else:
-            logs = f"Logs:\n{str(container.logs())}"
+            logs = str(container.logs())
+            print(logs)
+            logs = f"Logs:\n{logs[-1000:]}"
             api_job.ping(status="error", exit_code=res["StatusCode"], body=logs)
 
     except HTTPError as e:

@@ -58,6 +58,7 @@ while True:
             raise ValueError(f"Expected only one job, got {len(jobs)}")
 
         job_id, job = jobs.popitem()
+        logger.info(f"Pulled job {job_id}.")
         api_job = api.worker.JobAPI(job_id, api_worker)
 
         pinger_pre = status.pinger.ParallelPinger(
@@ -67,6 +68,7 @@ while True:
             timeout=TIMEOUT_STATUS,
         )
         pinger_pre.start()
+        logger.info(f"Preprocessing job {job_id}")
 
         path_job = path_base / job_id
 
@@ -124,9 +126,12 @@ while True:
             ping=status.status.DockerStatus(container, ping=api_job.ping).ping,
             timeout=TIMEOUT_STATUS,
         )
+        logger.info(f"Running job {job_id}")
         pinger_run.start()
         pinger_run.stop()
         res = container.wait()
+        logger.info(f"Job {job_id} finished with exit code {res['StatusCode']}")
+        logger.info(f"Postprocessing job {job_id}")
 
         # upload result
         pinger_post = status.pinger.ParallelPinger(
@@ -158,4 +163,5 @@ while True:
         else:
             raise e
 
+    logger.info(f"Job {job_id} finished")
     shutil.rmtree(path_job)

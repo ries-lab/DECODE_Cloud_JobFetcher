@@ -23,7 +23,7 @@ Copy the `.env.example` file to a `.env` file at the root of the directory and d
     - `PATH_HOST_BASE`: path to mount on the host (e.g., `/home/user/temp/decode_cloud/mount).
   - Timeouts:
     - `TIMEOUT_JOB`: how often (in seconds) to look for a new job.
-    - `TIMOUT_STATUS`: how often (in seconds) to send a keep-alive signal while processing the job.
+    - `TIMEOUT_STATUS`: how often (in seconds) to send a keep-alive signal while processing the job.
 #### Build the Docker image
 `docker build -t jobfetcher .`
 #### Install the nvidia-container-toolkit
@@ -31,7 +31,7 @@ Copy the `.env.example` file to a `.env` file at the root of the directory and d
 #### Run the Docker container
 `docker run --env-file .env --gpus '"device=0"' -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway jobfetcher:latest`, where:
  - `<PATH_HOST_BASE>` and `<PATH_BASE>` are set as above.
- - `--add-host=host.docker.internal:host-gateway jobfetcher:latest` is required only when running Linux.
+ - `--add-host=host.docker.internal:host-gateway` is required only when running Linux.
  - The `--gpus '"device=0"'` option specifies which GPUs the worker should be able to use. `--gpus all` selects all GPUs, but you typically want to select which GPU to reserve, and if you have many, run multiple workers each with one reserved GPU.
 
 ## Test locally

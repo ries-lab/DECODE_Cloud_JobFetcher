@@ -1,1 +1,1 @@
-from . import sys
+from . import sys as sys

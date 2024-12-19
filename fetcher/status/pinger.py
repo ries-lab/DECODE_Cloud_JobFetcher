@@ -22,16 +22,16 @@ class ParallelPinger:
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._ping_loop)
 
-    def _ping_loop(self):
+    def _ping_loop(self) -> None:
         while not self._stop_event.is_set():
             self.ping()
             time.sleep(self.timeout)
 
-    def start(self):
+    def start(self) -> None:
         if not self._thread.is_alive():
             self._thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         self._stop_event.set()
         self._thread.join()
 
@@ -42,12 +42,12 @@ class SerialPinger:
         self.ping = ping
         self.timeout = timeout
 
-    def start(self):
+    def start(self) -> None:
         while True:
             stop = self.ping()
             if stop:
                 break
             time.sleep(self.timeout)
 
-    def stop(self):
+    def stop(self) -> None:
         pass

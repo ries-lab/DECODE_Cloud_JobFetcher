@@ -1,1 +1,2 @@
-from . import pinger, status
+from . import pinger as pinger
+from . import status as status

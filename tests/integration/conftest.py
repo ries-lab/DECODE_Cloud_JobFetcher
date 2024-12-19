@@ -27,7 +27,7 @@ def docker_image() -> str:
 
 @pytest.fixture(scope="session", autouse=True)
 def api_url() -> Generator[str, Any, None]:
-    app = "mock_api.app.main:app"
+    app = "mock_api.app.app:app"
     port = 8000
     host = "0.0.0.0"
 

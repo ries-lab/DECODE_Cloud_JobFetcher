@@ -20,23 +20,22 @@ def main() -> None:
     TIMEOUT_JOB = int(os.getenv("TIMEOUT_JOB", 10))
     TIMEOUT_STATUS = int(os.getenv("TIMEOUT_STATUS", 10))
 
-    path_base = os.getenv("PATH_BASE", "~/temp/decode_cloud/mounts")
-    path_base = Path(path_base).expanduser()
-    path_host_base = os.getenv("PATH_HOST_BASE")
+    path_base = Path(os.getenv("PATH_BASE", "/data"))
+    path_host_base = Path(
+        os.getenv("PATH_HOST_BASE", "~/temp/decode_cloud/mounts")
+    ).expanduser()
 
-    access_info = api.token.get_access_info(os.getenv("API_URL"))["cognito"]
+    access_info = api.token.get_access_info(os.environ["API_URL"])["cognito"]
     api_worker = api.worker.API(
-        os.getenv("API_URL"),
+        os.environ["API_URL"],
+        # api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN")),
         api.token.AccessTokenAuth(
             client_id=access_info["client_id"],
             region=access_info["region"],
-            username=os.getenv("USERNAME"),
-            password=os.getenv("PASSWORD"),
+            username=os.environ["USERNAME"],
+            password=os.environ["PASSWORD"],
         ),
     )
-    # api_worker = api.worker.API(
-    #     os.getenv("API_URL"), api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN"))
-    # )
     worker_info = info.sys.collect()
 
     while True:
@@ -78,17 +77,25 @@ def main() -> None:
             path_job = path_base / job_id
 
             handler = job.handler
-            handler.files_up = [
-                io.files.PathAPIUp(path_job / p, f_type, path_job, api_job)
-                for f_type, p in handler.files_up.items()
-            ]
-            handler.files_down = [
-                io.files.PathAPIDown(path_job / p, p_id, api_job)
-                for p, p_id in handler.files_down.items()
-            ]
+            files_up = (
+                [
+                    io.files.PathAPIUp(path_job / p, f_type, path_job, api_job)
+                    for f_type, p in handler.files_up.items()
+                ]
+                if handler.files_up
+                else []
+            )
+            files_down = (
+                [
+                    io.files.PathAPIDown(path_job / p, p_id, api_job)
+                    for p, p_id in handler.files_down.items()
+                ]
+                if handler.files_down
+                else []
+            )
 
-            [p.get() for p in handler.files_down]
-            [p.mkdir(exist_ok=True, parents=True) for p in handler.files_up]
+            [p.get() for p in files_down]
+            [p.mkdir(exist_ok=True, parents=True) for p in files_up]
 
             # here we need the paths on the host, we can not do this recursively
             path_mnt = path_host_base / path_job.relative_to(path_base)
@@ -146,7 +153,7 @@ def main() -> None:
                 timeout=TIMEOUT_STATUS,
             )
             pinger_post.start()
-            p_upload = itertools.chain(*[p.rglob("*") for p in handler.files_up])
+            p_upload = itertools.chain(*[p.rglob("*") for p in files_up])
             [p.push() for p in p_upload if p.is_file()]
             pinger_post.stop()
 

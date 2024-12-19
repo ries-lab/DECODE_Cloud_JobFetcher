@@ -12,7 +12,7 @@ class Manager:
         environment: dict[str, str] | None = None,
         mounts: list[docker.types.Mount] | None = None,
         detach: bool = True,
-        **kwargs
+        **kwargs,
     ):
         self.pull()
         return self.run(command, environment, mounts, detach, **kwargs)
@@ -23,7 +23,7 @@ class Manager:
         environment: dict[str, str] | None = None,
         mounts: list[docker.types.Mount] | None = None,
         detach: bool = True,
-        **kwargs
+        **kwargs,
     ):
         if isinstance(command, list):
             command = " ".join(command)

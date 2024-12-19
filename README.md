@@ -57,14 +57,13 @@ If you want to additionally remove all images for this package and prune danglin
 Note that to run GPU jobs you will need the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ### Tests
-TODO: how testing?
 
-Testing without worker-facing API.
-- Start mock_api (cd to dir, create env) then `uvicorn app.main:app --host 0.0.0.0 --reload`.
-- Start docker container as above, with `API_URL=http://host.docker.internal:8000`.
-
+#### Automatic tests
 Run them with `poetry run pytest`.
 
-Note that tests marked with `aws` are skipped by default, to avoid the need for an AWS setup.
-They are however ran in the GitHub Action.
-For this to work, they must have been ran once locally with an account with sufficient permissions (`poetry run pytest -m "aws"`), since for security reasons, the AWS account used on GitHub does not have permissions to create RDS instances.
+#### Manual tests
+To test without worker-facing API running:
+- Start mock_api (cd to dir, create env) then `uvicorn app.app:app --host 0.0.0.0 --reload`.
+- Start docker container as described above, with `API_URL=http://host.docker.internal:8000`.
+
+Run them with `poetry run pytest`.

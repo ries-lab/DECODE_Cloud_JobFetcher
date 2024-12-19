@@ -124,7 +124,7 @@ class APIUploader(Uploader):
     def put(self, path: Path, type: str, path_api: str | None = None):
         path_api = path.stem if path_api is None else path_api
         f = {"file": (path_api, open(path, "rb"))}
-        r = session.post(self._url, params={"path": path_api, "type": type}, files=f)
+        session.post(self._url, params={"path": path_api, "type": type}, files=f)
 
 
 class Downloader:

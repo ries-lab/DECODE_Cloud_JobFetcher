@@ -2,9 +2,8 @@ import os
 from pathlib import Path
 from typing import Any, Literal
 
+from fetcher.api import model, token
 from fetcher.session import session
-
-from . import model, token
 
 
 class API:
@@ -18,9 +17,9 @@ class API:
             return None
         return {"Authorization": f"Bearer {self.access_token.access_token}"}
 
-    def fetch_jobs(self, **kwargs) -> dict[str, model.Job]:
+    def fetch_jobs(self, **kwargs) -> dict[str, model.JobSpecs]:
         response = self._request("GET", "/jobs", params=kwargs)
-        return {k: model.Job(**v) for k, v in response.json().items()}
+        return {k: model.JobSpecs(**v) for k, v in response.json().items()}
 
     def get_file(self, file_id: str, path: Path):
         url_getter = self.build_file_url(file_id)

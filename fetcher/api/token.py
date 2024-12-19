@@ -1,12 +1,13 @@
 import abc
 import datetime
+from typing import Any
 
 import boto3
 
 from fetcher.session import session
 
 
-def get_access_info(api_url):
+def get_access_info(api_url: str) -> dict[str, Any]:
     response = session.get(f"{api_url}/access_info")
     return response.json()
 

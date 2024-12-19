@@ -57,3 +57,7 @@ extend-select = ["I"]
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+module = "GPUtil.*"
+ignore_missing_imports = true

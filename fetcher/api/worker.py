@@ -1,10 +1,10 @@
-from typing import Any, Literal
-from pathlib import Path
-
 import os
+from pathlib import Path
+from typing import Any, Literal
+
+from fetcher.session import session
 
 from . import model, token
-from fetcher.session import session
 
 
 class API:

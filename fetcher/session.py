@@ -2,11 +2,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
-
-# Retry for server errors at 5s, 10s, 20s, 40s, 80s, 160s
+# Retry for server errors at 5s, 10s, 20s, 40s, 80s, 160s, 320s
 # (i.p., internal DB connection error might 500 for a couple of minutes)
 retry_strategy = Retry(
-    total=5,
+    total=6,
     backoff_factor=3,
     status_forcelist=[429, 500, 502, 503, 504],
 )

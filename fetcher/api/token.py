@@ -1,6 +1,7 @@
 import abc
-import boto3
 import datetime
+
+import boto3
 
 from fetcher.session import session
 

@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Literal, Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel

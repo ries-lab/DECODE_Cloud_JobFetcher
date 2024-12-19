@@ -3,12 +3,12 @@ import os
 import shutil
 import time
 from pathlib import Path
-from requests.exceptions import HTTPError
 
 import docker
 import dotenv
 import GPUtil
 from loguru import logger
+from requests.exceptions import HTTPError
 
 from fetcher import api, info, io, status
 from fetcher.docker import manager

@@ -1,16 +1,17 @@
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 from fetcher.status import status
 
 
-@pytest.fixture(scope="function")
-def mock_ping():
+@pytest.fixture
+def mock_ping() -> Mock:
     return Mock()
 
 
 class TestConstantStatus:
-    def test_ping(self, mock_ping):
+    def test_ping(self, mock_ping: Mock) -> None:
         constant_status = status.ConstantStatus("running", mock_ping)
         constant_status.ping()
         mock_ping.assert_called_with("running", None, None)
@@ -20,32 +21,34 @@ class TestConstantStatus:
 
 
 class TestDockerStatus:
-    @pytest.fixture(scope="function")
-    def mock_container(self):
-        class MockContainer:
-            def __init__(self):
-                self.attrs = {"State": {"Status": "running", "Running": True}}
-                self.state_cycle = (
-                    s
-                    for s in [
-                        {"Status": "running", "Running": True},
-                        {"Status": "running", "Running": True},
-                        {"Status": "exited", "ExitCode": 0, "Running": False},
-                        {
-                            "Status": "exited",
-                            "ExitCode": 1,
-                            "Error": "error",
-                            "Running": False,
-                        },
-                    ]
-                )
+    class MockContainer:
+        def __init__(self):
+            self.attrs = {"State": {"Status": "running", "Running": True}}
+            self.state_cycle = (
+                s
+                for s in [
+                    {"Status": "running", "Running": True},
+                    {"Status": "running", "Running": True},
+                    {"Status": "exited", "ExitCode": 0, "Running": False},
+                    {
+                        "Status": "exited",
+                        "ExitCode": 1,
+                        "Error": "error",
+                        "Running": False,
+                    },
+                ]
+            )
 
-            def reload(self):
-                self.attrs = {"State": next(self.state_cycle)}
+        def reload(self) -> None:
+            self.attrs = {"State": next(self.state_cycle)}
 
-        return MockContainer()
+    @pytest.fixture
+    def mock_container(self) -> MockContainer:
+        return self.MockContainer()
 
-    def test_ping_update_on_ping(self, mock_ping, mock_container):
+    def test_ping_update_on_ping(
+        self, mock_ping: Mock, mock_container: MockContainer
+    ) -> None:
         docker_status = status.DockerStatus(
             mock_container, mock_ping, update_on_ping=True
         )
@@ -63,7 +66,9 @@ class TestDockerStatus:
         mock_ping.assert_called_with("error", 1, "error")
         assert docker_status.exited is True
 
-    def test_ping_no_update(self, mock_ping, mock_container):
+    def test_ping_no_update(
+        self, mock_ping: Mock, mock_container: MockContainer
+    ) -> None:
         docker_status = status.DockerStatus(
             mock_container, mock_ping, update_on_ping=False
         )

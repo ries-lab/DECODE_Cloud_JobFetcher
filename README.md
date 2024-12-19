@@ -10,7 +10,25 @@ The local workers run this as a Docker container to process jobs, by communicati
 Additionally, while processing the jobs, they send status updates (new status or keep-alive signals).  
 The [cloud workers](https://github.com/ries-lab/DECODE_AWS_Infrastructure/tree/main/stack/worker/runtime/jobs_handler) use specific functions from this package to do the above steps in separate AWS Lambda functions.
 
-## Run locally
+## Development guide
+
+### Prepare the development environment
+We use [poetry](https://python-poetry.org/) for dependency tracking.
+See online guides on how to use it, but this setup should work:
+ - `conda create -n "3-11-10" python=3.11.10`
+ - `conda activate 3-11-10`
+ - `pip install pipx`
+ - `pipx install poetry`
+ - `poetry env use /path/to/conda/env/bin/python`
+ - `poetry install`
+Afterwards, when you need a new package, use `poetry add [--group dev] <package>` to add new dependencies.
+The `--group dev` option adds the dependency only for development (e.g., pre-commit hooks, pytest, ...).
+
+Install the pre-commit hooks: `pre-commit install`.
+These currently include ruff and mypy.
+
+### Run locally
+
 #### Define the environment variables
 Copy the `.env.example` file to a `.env` file at the root of the directory and define its fields appropriately (alternatively, these fields can be passed as environment variables to the Docker container directly, e.g., with the `-e` flag of the `docker run` command):
   - Worker-facing API connection:
@@ -24,16 +42,29 @@ Copy the `.env.example` file to a `.env` file at the root of the directory and d
   - Timeouts:
     - `TIMEOUT_JOB`: how often (in seconds) to look for a new job.
     - `TIMEOUT_STATUS`: how often (in seconds) to send a keep-alive signal while processing the job.
-#### Build the Docker image
-`docker build -t jobfetcher .`
-#### Install the nvidia-container-toolkit
-[See here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) to run GPU jobs
-#### Run the Docker container
-`docker run --env-file .env --gpus '"device=0"' -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway jobfetcher:latest`, where:
- - `<PATH_HOST_BASE>` and `<PATH_BASE>` are set as above.
- - `--add-host=host.docker.internal:host-gateway` is required only when running Linux.
- - The `--gpus '"device=0"'` option specifies which GPUs the worker should be able to use. `--gpus all` selects all GPUs, but you typically want to select which GPU to reserve, and if you have many, run multiple workers each with one reserved GPU.
 
-## Test locally
+#### Start the job fetcher
+`poetry run run`
+
+#### Docker
+Alternatively, you can build a Docker image.
+For this, run `poetry run docker-build`:
+This will create a Docker image named `api:<branch_name>`.  
+To run the Docker container, use `poetry run docker-run`.  
+To stop and delete all containers for this package, use `poetry run docker-stop`.
+If you want to additionally remove all images for this package and prune dangling images, run `poetry run docker-cleanup`.
+
+Note that to run GPU jobs you will need the [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+
+### Tests
+TODO: how testing?
+
+Testing without worker-facing API.
 - Start mock_api (cd to dir, create env) then `uvicorn app.main:app --host 0.0.0.0 --reload`.
 - Start docker container as above, with `API_URL=http://host.docker.internal:8000`.
+
+Run them with `poetry run pytest`.
+
+Note that tests marked with `aws` are skipped by default, to avoid the need for an AWS setup.
+They are however ran in the GitHub Action.
+For this to work, they must have been ran once locally with an account with sufficient permissions (`poetry run pytest -m "aws"`), since for security reasons, the AWS account used on GitHub does not have permissions to create RDS instances.

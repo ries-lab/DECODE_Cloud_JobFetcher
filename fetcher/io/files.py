@@ -22,7 +22,7 @@ class PathAPIUp(PathAPIbase):
         self,
         path: str | Path,
         f_type: Literal["artifact", "output", "log"],
-        path_api: str,
+        path_api: str | Path,
         api: worker.JobAPI,
     ):
         """

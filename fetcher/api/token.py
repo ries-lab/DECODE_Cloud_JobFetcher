@@ -9,7 +9,7 @@ from fetcher.session import session
 
 def get_access_info(api_url: str) -> dict[str, Any]:
     response = session.get(f"{api_url}/access_info")
-    return response.json()
+    return response.json()  # type: ignore
 
 
 class AccessToken(abc.ABC):
@@ -20,11 +20,11 @@ class AccessToken(abc.ABC):
 
 
 class AccessTokenFixed(AccessToken):
-    def __init__(self, access_token: str | None = None):
+    def __init__(self, access_token: str):
         self._access_token = access_token
 
     @property
-    def access_token(self) -> str | None:
+    def access_token(self) -> str:
         return self._access_token
 
 
@@ -41,23 +41,19 @@ class AccessTokenAuth(AccessToken):
         self._client_id = client_id
         self._username = username
         self._password = password
-        self._access_token = None
-        self._expiry = None
         self._min_validity = min_validity
         self._cognito_client = boto3.client("cognito-idp", region_name=region)
+        self._refresh()
 
     @property
     def access_token(self) -> str:
-        if (
-            self._access_token is None
-            or self._expiry
-            < datetime.datetime.utcnow()
-            + datetime.timedelta(seconds=self._min_validity)
-        ):
+        if self._expiry < datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) + datetime.timedelta(seconds=self._min_validity):
             self._refresh()
         return self._access_token
 
-    def _refresh(self):
+    def _refresh(self) -> None:
         response = self._cognito_client.initiate_auth(
             AuthFlow="USER_PASSWORD_AUTH",
             AuthParameters={
@@ -66,7 +62,7 @@ class AccessTokenAuth(AccessToken):
             },
             ClientId=self._client_id,
         )
-        self._access_token = response["AuthenticationResult"]["IdToken"]
-        self._expiry = datetime.datetime.utcnow() + datetime.timedelta(
-            seconds=response["AuthenticationResult"]["ExpiresIn"]
-        )
+        self._access_token: str = response["AuthenticationResult"]["IdToken"]
+        self._expiry = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) + datetime.timedelta(seconds=response["AuthenticationResult"]["ExpiresIn"])

@@ -7,12 +7,12 @@ app = FastAPI()
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     return {"message": "Hello World"}
 
 
 @app.get("/files/{file_id}/url")
-async def file_get(file_id) -> str:
+async def file_get(file_id: str) -> dict[str, str]:
     # return presigned public URL
     match file_id:
         case "config_file_id":
@@ -159,12 +159,12 @@ async def job_file_post(
     type: Literal["artifact", "log", "output"],
     base_path: str = "",
     file: UploadFile = File(...),
-):
+) -> dict[str, Any]:
     return {"url": "https://fake_url.com", "method": "put", "data": {}}
 
 
 @app.get("/jobs/{job_id}/status")
-async def job_status_get(job_id):
+async def job_status_get(job_id: int) -> dict[str, str]:
     return {"message": f"The job with ID {job_id}."}
 
 
@@ -173,7 +173,7 @@ async def job_status_put(
     job_id: str,
     status: Literal["preprocessing", "running", "postprocessing", "finished", "error"],
     runtime_details: str | None = None,
-):
+) -> dict[str, Any]:
     return {
         "job_id": job_id,
         "status": status,

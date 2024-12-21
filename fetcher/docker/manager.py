@@ -18,7 +18,7 @@ class Manager:
         environment: dict[str, str] | None = None,
         mounts: list[docker.types.Mount] | None = None,
         detach: bool = True,
-        **kwargs: dict[str, Any],
+        **kwargs: Any,
     ) -> bytes | docker.models.containers.Container:
         self.pull()
         return self.run(

@@ -20,7 +20,7 @@ class API:
             return None
         return {"Authorization": f"Bearer {self.access_token.access_token}"}
 
-    def fetch_jobs(self, **kwargs: dict[str, Any]) -> dict[str, model.JobSpecs]:
+    def fetch_jobs(self, **kwargs: Any) -> dict[str, model.JobSpecs]:
         response = self._request("GET", "/jobs", params=kwargs)
         return {k: model.JobSpecs(**v) for k, v in response.json().items()}
 

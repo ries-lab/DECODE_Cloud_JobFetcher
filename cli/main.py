@@ -3,8 +3,11 @@ import os
 import shutil
 import time
 from pathlib import Path
+from typing import cast
 
 import docker
+import docker.models
+import docker.models.containers
 import dotenv
 import GPUtil
 from loguru import logger
@@ -118,13 +121,16 @@ def main() -> None:
                 if worker_info.gpus
                 else {}
             )
-            container = docker_manager.auto_run(
-                command=job.app.cmd,
-                environment=job.app.env,
-                mounts=mounts,
-                detach=True,
-                ipc_mode="host",
-                **kwargs_gpu,
+            container = cast(
+                docker.models.containers.Container,
+                docker_manager.auto_run(
+                    command=job.app.cmd,
+                    environment=job.app.env,
+                    mounts=mounts,
+                    detach=True,
+                    ipc_mode="host",
+                    **kwargs_gpu,
+                ),
             )
 
             pinger_pre.stop()

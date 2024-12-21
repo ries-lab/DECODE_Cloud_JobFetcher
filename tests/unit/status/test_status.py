@@ -20,37 +20,40 @@ class TestConstantStatus:
         mock_ping.assert_called_with("running", None, None)
 
 
+class MockContainer:
+    def __init__(self) -> None:
+        self.attrs = {"State": {"Status": "running", "Running": True}}
+        self.state_cycle = (
+            s
+            for s in [
+                {"Status": "running", "Running": True},
+                {"Status": "running", "Running": True},
+                {"Status": "exited", "ExitCode": 0, "Running": False},
+                {
+                    "Status": "exited",
+                    "ExitCode": 1,
+                    "Error": "error",
+                    "Running": False,
+                },
+            ]
+        )
+
+    def reload(self) -> None:
+        self.attrs = {"State": next(self.state_cycle)}
+
+
 class TestDockerStatus:
-    class MockContainer:
-        def __init__(self):
-            self.attrs = {"State": {"Status": "running", "Running": True}}
-            self.state_cycle = (
-                s
-                for s in [
-                    {"Status": "running", "Running": True},
-                    {"Status": "running", "Running": True},
-                    {"Status": "exited", "ExitCode": 0, "Running": False},
-                    {
-                        "Status": "exited",
-                        "ExitCode": 1,
-                        "Error": "error",
-                        "Running": False,
-                    },
-                ]
-            )
-
-        def reload(self) -> None:
-            self.attrs = {"State": next(self.state_cycle)}
-
     @pytest.fixture
     def mock_container(self) -> MockContainer:
-        return self.MockContainer()
+        return MockContainer()
 
     def test_ping_update_on_ping(
         self, mock_ping: Mock, mock_container: MockContainer
     ) -> None:
         docker_status = status.DockerStatus(
-            mock_container, mock_ping, update_on_ping=True
+            mock_container,  # type: ignore
+            mock_ping,
+            update_on_ping=True,
         )
         assert docker_status.exited is False
         docker_status.ping()
@@ -70,7 +73,9 @@ class TestDockerStatus:
         self, mock_ping: Mock, mock_container: MockContainer
     ) -> None:
         docker_status = status.DockerStatus(
-            mock_container, mock_ping, update_on_ping=False
+            mock_container,  # type: ignore
+            mock_ping,
+            update_on_ping=False,
         )
         docker_status.ping()
         mock_ping.assert_called_with("running", None, None)

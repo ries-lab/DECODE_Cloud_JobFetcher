@@ -1,12 +1,12 @@
 import abc
 import threading
 import time
-from typing import Any, Callable
+from typing import Callable
 
 
 class Pinger(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, ping: Callable[[], bool], timeout: int = 60):
+    def __init__(self, ping: Callable[[], bool], timeout: int | float = 60):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -19,7 +19,7 @@ class Pinger(abc.ABC):
 
 
 class ParallelPinger:
-    def __init__(self, ping: Callable[[], bool], timeout: int = 60):
+    def __init__(self, ping: Callable[[], bool], timeout: int | float = 60):
         """Ran parallel to the main thread, requires a stop event to be stopped"""
         self.ping = ping
         self.timeout = timeout
@@ -41,7 +41,7 @@ class ParallelPinger:
 
 
 class SerialPinger:
-    def __init__(self, ping: Callable[[], bool], timeout: int = 60):
+    def __init__(self, ping: Callable[[], bool], timeout: int | float = 60):
         """Ran in main thread, stops when ping returns False"""
         self.ping = ping
         self.timeout = timeout

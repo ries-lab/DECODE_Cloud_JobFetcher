@@ -14,7 +14,12 @@ def test_path_api_up_construction(delegate: str, tmp_path: Path) -> None:
         for p in ["a.txt", "b.txt", "c.txt"]
     ]
 
-    p = files.PathAPIUp(tmp_path, "output", Path(""), None)
+    p = files.PathAPIUp(
+        tmp_path,
+        "output",
+        Path(""),
+        None,  # type: ignore
+    )
     p_files = list(getattr(p, delegate)("*"))
 
     for p in p_files:
@@ -34,16 +39,16 @@ def test_path_api_up_relative(path: str, path_api: str, expected: str) -> None:
 
 
 def test_path_api_up_push(tmp_path: Path) -> None:
-    p = tmp_path / "test.txt"
-    p.write_text("test")
+    path = tmp_path / "test.txt"
+    path.write_text("test")
 
     mock_api = mock.MagicMock()
 
-    p = files.PathAPIUp(p, "output", tmp_path, mock_api)
-    p.push()
+    path_api_up = files.PathAPIUp(path, "output", tmp_path, mock_api)
+    path_api_up.push()
 
     mock_api.put_file_native.assert_called_once_with(
-        p._path, "output", Path("test.txt")
+        path_api_up._path, "output", Path("test.txt")
     )
 
 

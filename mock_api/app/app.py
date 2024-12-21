@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Literal, Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
@@ -8,12 +7,12 @@ app = FastAPI()
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     return {"message": "Hello World"}
 
 
 @app.get("/files/{file_id}/url")
-async def file_get(file_id) -> str:
+async def file_get(file_id: str) -> dict[str, str]:
     # return presigned public URL
     match file_id:
         case "config_file_id":
@@ -33,23 +32,7 @@ async def file_get(file_id) -> str:
     return {"url": url, "method": "get"}
 
 
-class SpecsHandler(BaseModel):
-    image_url: str
-    files_down: dict[str, str]
-    files_up: dict[str, str]
-
-
-class SpecsApp(BaseModel):
-    cmd: list[str] | None
-    env: dict[str, str] | None = None
-
-
-class SpecsMeta(BaseModel):
-    class Config:
-        extra = "allow"
-
-
-class SpecsHardware(BaseModel):
+class HardwareSpecs(BaseModel):
     cpu_cores: int | None = None
     memory: int | None = None
     gpu_model: str | None = None
@@ -57,11 +40,33 @@ class SpecsHardware(BaseModel):
     gpu_mem: int | None = None
 
 
-class Job(BaseModel):
-    app: SpecsApp
-    handler: SpecsHandler
-    meta: SpecsMeta
-    hardware: SpecsHardware
+class MetaSpecs(BaseModel):
+    job_id: int
+    date_created: str  # iso format
+
+    class Config:
+        extra = "allow"
+
+
+class AppSpecs(BaseModel):
+    cmd: list[str] | None = None
+    env: dict[str, str] | None = None
+
+
+class HandlerSpecs(BaseModel):
+    image_url: str
+    image_name: str | None = None
+    image_version: str | None = None
+    entrypoint: str | None = None
+    files_down: dict[str, str] | None = None
+    files_up: dict[Literal["output", "log", "artifact"], str] | None = None
+
+
+class JobSpecs(BaseModel):
+    app: AppSpecs
+    handler: HandlerSpecs
+    meta: MetaSpecs
+    hardware: HardwareSpecs
 
     class Config:
         orm_mode = True
@@ -106,8 +111,8 @@ async def job_get(
         }
     }
     # return {
-    #     "a6": Job(
-    #         app=SpecsApp(
+    #     "a6": JobSpecs(
+    #         app=AppSpecs(
     #             cmd=[
     #                 # fmt: off
     #                 # "python", "-m", "cli.train",
@@ -117,7 +122,7 @@ async def job_get(
     #                 # fmt: on
     #             ]
     #         ),
-    #         handler=SpecsHandler(
+    #         handler=HandlerSpecs(
     #             image_url="decode:dev_multiphot_tar",
     #             files_down={
     #                 "config/config.yaml": "config_a6",
@@ -126,15 +131,15 @@ async def job_get(
     #             },
     #             files_up={"artifact": "output/", "log": "log/"},
     #         ),
-    #         meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
+    #         meta=MetaSpecs(date_created="2021-08-01T12:00:00+00:00"),
     #     )
     # }
     # return {
-    #     "mock_a6": Job(
-    #         app=SpecsApp(
+    #     "mock_a6": JobSpecs(
+    #         app=AppSpecs(
     #             cmd=None
     #         ),
-    #         handler=SpecsHandler(
+    #         handler=HandlerSpecs(
     #             image_url="mock_decode:0.0.6",
     #             files_down={
     #                 "config/config.yaml": "config_a6",
@@ -143,7 +148,7 @@ async def job_get(
     #             },
     #             files_up={"artifact": "artifact/", "log": "log/", "output": "output/"},
     #         ),
-    #         meta=SpecsMeta(date_created="2021-08-01T12:00:00+00:00"),
+    #         meta=MetaSpecs(date_created="2021-08-01T12:00:00+00:00"),
     #     )
     # }
 
@@ -154,12 +159,12 @@ async def job_file_post(
     type: Literal["artifact", "log", "output"],
     base_path: str = "",
     file: UploadFile = File(...),
-):
+) -> dict[str, Any]:
     return {"url": "https://fake_url.com", "method": "put", "data": {}}
 
 
 @app.get("/jobs/{job_id}/status")
-async def job_status_get(job_id):
+async def job_status_get(job_id: int) -> dict[str, str]:
     return {"message": f"The job with ID {job_id}."}
 
 
@@ -168,7 +173,7 @@ async def job_status_put(
     job_id: str,
     status: Literal["preprocessing", "running", "postprocessing", "finished", "error"],
     runtime_details: str | None = None,
-):
+) -> dict[str, Any]:
     return {
         "job_id": job_id,
         "status": status,

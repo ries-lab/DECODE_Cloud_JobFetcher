@@ -1,0 +1,66 @@
+[tool.poetry]
+name = "fetcher"
+version = "0.1.0"
+description = "Job fetcher for workers of DECODE OpenCloud."
+authors = ["Arthur Jaques <arthur.jaques@hispeed.ch>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11.10"
+python-dotenv = "^1.0.1"
+requests = "^2.32.3"
+psutil = "^6.1.0"
+gputil = "^1.4.0"
+loguru = "^0.7.3"
+pydantic = "^2.10.3"
+boto3 = "^1.35.81"
+fastapi = "^0.115.6"
+docker = "^7.1.0"
+
+
+[tool.poetry.group.dev.dependencies]
+types-boto3 = "^1.35.81"
+botocore-stubs = "^1.35.81"
+boto3-stubs = {extras = ["full"], version = "^1.35.81"}
+mypy = "^1.13.0"
+pre-commit = "^4.0.1"
+pytest = "^8.3.4"
+ruff = "^0.8.3"
+pytest-cov = "^6.0.0"
+types-docker = "^7.1.0.20240827"
+toml = "^0.10.2"
+uvicorn = "^0.34.0"
+fastapi = "^0.115.6"
+pydantic = "^2.10.4"
+docker = "^7.1.0"
+python-multipart = "^0.0.20"
+types-psutil = "^6.1.0.20241102"
+types-toml = "^0.10.8.20240310"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core=1.8.4"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+docker-build = "scripts.docker:build"
+docker-run = "scripts.docker:run"
+docker-stop = "scripts.docker:stop"
+docker-cleanup = "scripts.docker:cleanup"
+run = "cli.main:main"
+
+[tool.pytest.ini_options]
+markers = [
+    "aws: requires aws credentials"
+]
+addopts = "-m 'not aws'"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = "GPUtil.*"
+ignore_missing_imports = true

@@ -1,7 +1,6 @@
-import sys
 import os
+import sys
 from pathlib import Path
-
 
 if __name__ == "__main__":
     print(sys.argv)
@@ -11,8 +10,7 @@ if __name__ == "__main__":
 
     # fake some output
     print("Faking some output")
-    paths_out = ["/data/output", "/data/log", "/data/artifact"]
-    paths_out = [Path(p) for p in paths_out]
+    paths_out = [Path(p) for p in ["/data/output", "/data/log", "/data/artifact"]]
     for p in paths_out:
         p_rand = p / "random.txt"
         p_rand.write_text("Random text.")

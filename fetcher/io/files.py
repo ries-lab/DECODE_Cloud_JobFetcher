@@ -1,18 +1,21 @@
 from abc import abstractmethod
 from pathlib import Path
-from typing import Literal
+from typing import Any, Generator
+
+import requests
 
 from fetcher.api import worker
+from fetcher.models import FileType
 from fetcher.session import session
 
 
 class PathAPIbase:
     _path: Path
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._path)
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         # Delegate to the underlying _path object
         return getattr(self._path, attr)
 
@@ -21,8 +24,8 @@ class PathAPIUp(PathAPIbase):
     def __init__(
         self,
         path: str | Path,
-        f_type: Literal["artifact", "output", "log"],
-        path_api: str,
+        f_type: FileType,
+        path_api: str | Path,
         api: worker.JobAPI,
     ):
         """
@@ -44,21 +47,21 @@ class PathAPIUp(PathAPIbase):
         """
         return self._path.relative_to(self._path_api)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"PathAPIUp({repr(self._path)}, {repr(self._f_type)}, {repr(self._path_api)}, {repr(self._api)})"
 
-    def push(self):
+    def push(self) -> requests.Response:
         if self._path.is_dir():
             raise NotImplementedError("Directory upload not implemented")
-        self._api.put_file_native(self._path, self._f_type, self.path_api_rel)
+        return self._api.put_file_native(self._path, self._f_type, self.path_api_rel)
 
-    def glob(self, pattern: str):
+    def glob(self, pattern: str) -> Generator["PathAPIUp", Any, None]:
         return (
             type(self)(p, self._f_type, self._path_api, self._api)
             for p in self._path.glob(pattern)
         )
 
-    def rglob(self, pattern: str):
+    def rglob(self, pattern: str) -> Generator["PathAPIUp", Any, None]:
         return (
             type(self)(p, self._f_type, self._path_api, self._api)
             for p in self._path.rglob(pattern)
@@ -71,48 +74,22 @@ class PathAPIDown(PathAPIbase):
         self._file_id = file_id
         self._api = api
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"PathAPIDown({repr(self._path)}, {repr(self._file_id)}, {repr(self._api)})"
         )
 
-    def get(self, mkdir: bool = True, parents: bool = True):
+    def get(self, mkdir: bool = True, parents: bool = True) -> requests.Response:
         if mkdir:
             self._path.parent.mkdir(parents=parents, exist_ok=True)
         return self._api.get_file(self._file_id, self._path)
 
 
-class PathAPItracked(Path):
-    def __init__(
-        self,
-        path: str | Path,
-        file_id: str | None,
-        path_api: str | None,
-        api,
-        api_upload_type: str | None,
-    ):
-        """
-
-        Args:
-            path: local path
-            file_id: file ID on API for downloading
-            path_api: relative path on API for uploading
-            api: api binder
-            api_upload_type: type of upload, e.g. "artifact"
-        """
-        super().__init__(path)
-
-        self._path_api = path_api
-        self._api = api
-        self._api_upload_type = api_upload_type
-
-    def get(self):
-        pass
-
-
 class Uploader:
     @abstractmethod
-    def put(self, path: Path):
+    def put(
+        self, path: Path, type: str, path_api: str | None = None
+    ) -> requests.Response:
         raise NotImplementedError
 
 
@@ -121,10 +98,15 @@ class APIUploader(Uploader):
         super().__init__()
         self._url = url
 
-    def put(self, path: Path, type: str, path_api: str | None = None):
+    def put(
+        self, path: Path, type: str, path_api: str | None = None
+    ) -> requests.Response:
         path_api = path.stem if path_api is None else path_api
         f = {"file": (path_api, open(path, "rb"))}
-        r = session.post(self._url, params={"path": path_api, "type": type}, files=f)
+        response = session.post(
+            self._url, params={"path": path_api, "type": type}, files=f
+        )
+        return response
 
 
 class Downloader:
@@ -134,14 +116,14 @@ class Downloader:
         )
 
     @abstractmethod
-    def get(self, url: str, path: Path):
+    def get(self, url: str, path: Path) -> requests.Response:
         raise NotImplementedError
 
 
 class APIDownloader(Downloader):
-    def get(self, url: str, path: Path):
-        r = session.get(url, allow_redirects=True)
-
+    def get(self, url: str, path: Path) -> requests.Response:
+        response = session.get(url, allow_redirects=True)
         path = path if path is not None else self._path
         with path.open("wb") as f:
-            f.write(r.content)
+            f.write(response.content)
+        return response

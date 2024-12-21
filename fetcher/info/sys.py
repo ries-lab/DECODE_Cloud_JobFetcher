@@ -4,46 +4,73 @@ import socket
 
 import GPUtil
 import psutil
+from pydantic import BaseModel
 
 
-def collect() -> dict:
-    return {
-        "host": collect_host(),
-        "os": collect_os(),
-        "sys": collect_sys(),
-        "gpu": collect_gpu(),
-    }
+class HostInfo(BaseModel):
+    hostname: str
 
 
-def collect_host() -> dict:
-    return {
-        "hostname": socket.gethostname(),
-    }
+class OSInfo(BaseModel):
+    system: str
+    release: str
+    version: str
+    alias: str
 
 
-def collect_os() -> dict:
-    return {
-        "system": platform.system(),
-        "release": platform.release(),
-        "version": platform.version(),
-        "alias": platform.platform(aliased=True),
-    }
+class CPUInfo(BaseModel):
+    architecture: str
+    cores: int
+    memory: int
 
 
-def collect_sys() -> dict:
-    return {
-        "architecture": platform.machine(),
-        "cores": os.cpu_count(),
-        "memory": psutil.virtual_memory().total >> 20,
-    }
+class GPUInfo(BaseModel):
+    model: str
+    memory: int
 
 
-def collect_gpu() -> list[dict]:
-    gpus = GPUtil.getGPUs()
+class SystemInfo(BaseModel):
+    host: HostInfo
+    os: OSInfo
+    sys: CPUInfo
+    gpus: list[GPUInfo]
+
+
+def collect() -> SystemInfo:
+    return SystemInfo(
+        host=collect_host(),
+        os=collect_os(),
+        sys=collect_sys(),
+        gpus=collect_gpus(),
+    )
+
+
+def collect_host() -> HostInfo:
+    return HostInfo(hostname=socket.gethostname())
+
+
+def collect_os() -> OSInfo:
+    return OSInfo(
+        system=platform.system(),
+        release=platform.release(),
+        version=platform.version(),
+        alias=platform.platform(aliased=True),
+    )
+
+
+def collect_sys() -> CPUInfo:
+    return CPUInfo(
+        architecture=platform.machine(),
+        cores=os.cpu_count() or 1,
+        memory=psutil.virtual_memory().total >> 20,
+    )
+
+
+def collect_gpus() -> list[GPUInfo]:
     return [
-        {
-            "model": g.name,
-            "memory": int(g.memoryTotal),
-        }
-        for g in gpus
+        GPUInfo(
+            model=gpu.name,
+            memory=int(gpu.memoryTotal),
+        )
+        for gpu in GPUtil.getGPUs()
     ]

@@ -6,16 +6,20 @@ from typing import Any, Callable
 
 class Pinger(abc.ABC):
     @abc.abstractmethod
-    def start(self):
+    def __init__(self, ping: Callable[[], bool], timeout: int = 60):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def stop(self):
+    def start(self) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def stop(self) -> None:
         raise NotImplementedError
 
 
 class ParallelPinger:
-    def __init__(self, ping: Callable[[], Any], timeout: int = 60):
+    def __init__(self, ping: Callable[[], bool], timeout: int = 60):
         """Ran parallel to the main thread, requires a stop event to be stopped"""
         self.ping = ping
         self.timeout = timeout

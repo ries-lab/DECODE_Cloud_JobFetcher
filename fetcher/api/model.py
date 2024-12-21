@@ -1,6 +1,6 @@
-from typing import Literal
-
 from pydantic import BaseModel
+
+from fetcher.models import FileType
 
 
 class HardwareSpecs(BaseModel):
@@ -30,7 +30,7 @@ class HandlerSpecs(BaseModel):
     image_version: str | None = None
     entrypoint: str | None = None
     files_down: dict[str, str] | None = None
-    files_up: dict[Literal["output", "log", "artifact"], str] | None = None
+    files_up: dict[FileType, str] | None = None
 
 
 class JobSpecs(BaseModel):

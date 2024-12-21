@@ -1,16 +1,26 @@
 from abc import abstractmethod
-from typing import Callable
+from typing import Any, Callable
 
+import docker
+import docker.models
+import docker.models.containers
 from loguru import logger
+
+from fetcher.models import Status as JobStatus
 
 
 class Status:
-    def __init__(self, ping: Callable):
+    def __init__(
+        self,
+        ping: Callable[[JobStatus, int | None, str | None], Any],
+        *args: list[Any],
+        **kwargs: dict[str, Any],
+    ):
         """Store/check the status of a job and ping it to an API."""
         self._ping = ping
 
     @abstractmethod
-    def update(self):
+    def update(self) -> None:
         """Update the status."""
         raise NotImplementedError
 
@@ -21,7 +31,11 @@ class Status:
 
 
 class ConstantStatus(Status):
-    def __init__(self, status: str, ping: Callable):
+    def __init__(
+        self,
+        status: JobStatus,
+        ping: Callable[[JobStatus, int | None, str | None], Any],
+    ):
         """A status that never changes.
         Useful e.g. while pre-processing a job, where until the job is started, the status is always "preprocessing".
         :param status: The status to return.
@@ -29,16 +43,21 @@ class ConstantStatus(Status):
         super().__init__(ping=ping)
         self._status = status
 
-    def update(self):
+    def update(self) -> None:
         pass
 
-    def ping(self):
+    def ping(self) -> bool:
         self._ping(self._status, None, None)
         return False
 
 
 class DockerStatus(Status):
-    def __init__(self, container, ping: Callable, update_on_ping: bool = True):
+    def __init__(
+        self,
+        container: docker.models.containers.Container,
+        ping: Callable[[JobStatus, int | None, str | None], Any],
+        update_on_ping: bool = True,
+    ):
         """A status that is based on a Docker container.
         When running a Docker container, the status is checked to see if it is running, exited, or exited with an error.
         :param container: The container to check."""
@@ -48,13 +67,13 @@ class DockerStatus(Status):
         self._update_on_ping = update_on_ping
 
     @property
-    def exited(self):
+    def exited(self) -> bool:
         return not self._container.attrs["State"]["Running"]
 
-    def update(self):
+    def update(self) -> None:
         self._container.reload()
 
-    def ping(self):
+    def ping(self) -> bool:
         if self._update_on_ping:
             self.update()
         logger.debug(f"Container state: {self._container.attrs['State']}")

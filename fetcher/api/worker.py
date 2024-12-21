@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import requests
 
 from fetcher.api import model, token
+from fetcher.models import FileType, Status
 from fetcher.session import session
 
 
@@ -68,9 +69,7 @@ class JobAPI:
 
     def ping(
         self,
-        status: Literal[
-            "preprocessing", "running", "postprocessing", "finished", "error"
-        ],
+        status: Status,
         exit_code: int | None,
         body: str | None,
     ) -> requests.Response:
@@ -108,6 +107,6 @@ class JobAPI:
         return session.request(**request_kwargs, files=f)
 
     def put_file_native(
-        self, path: Path, f_type: Literal["artifact", "output", "log"], path_api: Path
+        self, path: Path, f_type: FileType, path_api: Path
     ) -> requests.Response:
         return self.put_file(path, path_api, file_type=f_type)

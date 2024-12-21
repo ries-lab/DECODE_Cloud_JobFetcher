@@ -1,10 +1,11 @@
 from abc import abstractmethod
 from pathlib import Path
-from typing import Any, Generator, Literal
+from typing import Any, Generator
 
 import requests
 
 from fetcher.api import worker
+from fetcher.models import FileType
 from fetcher.session import session
 
 
@@ -23,7 +24,7 @@ class PathAPIUp(PathAPIbase):
     def __init__(
         self,
         path: str | Path,
-        f_type: Literal["artifact", "output", "log"],
+        f_type: FileType,
         path_api: str | Path,
         api: worker.JobAPI,
     ):

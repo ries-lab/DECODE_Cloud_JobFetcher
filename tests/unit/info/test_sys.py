@@ -1,23 +1,18 @@
-from unittest.mock import Mock, patch
+from pytest_mock import MockerFixture
 
 from fetcher.info import sys
 
 
-@patch("fetcher.info.sys.collect_host")
-@patch("fetcher.info.sys.collect_os")
-@patch("fetcher.info.sys.collect_sys")
-@patch("fetcher.info.sys.collect_gpu")
-def test_collect(
-    mock_collect_gpu: Mock,
-    mock_collect_sys: Mock,
-    mock_collect_os: Mock,
-    mock_collect_host: Mock,
-) -> None:
+def test_collect(mocker: MockerFixture) -> None:
+    mock_collect_host = mocker.spy(sys, "collect_host")
+    mock_collect_os = mocker.spy(sys, "collect_os")
+    mock_collect_sys = mocker.spy(sys, "collect_sys")
+    mock_collect_gpus = mocker.spy(sys, "collect_gpus")
     sys.collect()
     mock_collect_host.assert_called_once()
     mock_collect_os.assert_called_once()
     mock_collect_sys.assert_called_once()
-    mock_collect_gpu.assert_called_once()
+    mock_collect_gpus.assert_called_once()
 
 
 def test_host() -> None:

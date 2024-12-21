@@ -75,6 +75,7 @@ def run() -> None:
         ],
         extra_hosts={"host.docker.internal": "host-gateway"},
         auto_remove=True,
+        detach=True,
     )
 
 

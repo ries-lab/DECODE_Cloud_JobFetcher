@@ -21,24 +21,24 @@ def test_collect(
 
 
 def test_host() -> None:
-    assert "hostname" in sys.collect_host()
+    assert "hostname" in sys.collect_host().model_dump()
 
 
 def test_os() -> None:
     out = sys.collect_os()
-    assert "system" in out
-    assert "release" in out
-    assert "version" in out
-    assert "alias" in out
+    assert "system" in out.model_dump()
+    assert "release" in out.model_dump()
+    assert "version" in out.model_dump()
+    assert "alias" in out.model_dump()
 
 
 def test_sys() -> None:
     out = sys.collect_sys()
-    assert "architecture" in out
-    assert "cores" in out
-    assert "memory" in out
+    assert "architecture" in out.model_dump()
+    assert "cores" in out.model_dump()
+    assert "memory" in out.model_dump()
 
 
 def test_gpu() -> None:
-    out = sys.collect_gpu()
+    out = sys.collect_gpus()
     assert isinstance(out, list)

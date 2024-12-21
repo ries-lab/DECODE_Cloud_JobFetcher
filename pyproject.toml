@@ -34,6 +34,7 @@ fastapi = "^0.115.6"
 pydantic = "^2.10.4"
 docker = "^7.1.0"
 python-multipart = "^0.0.20"
+types-psutil = "^6.1.0.20241102"
 
 [build-system]
 requires = ["poetry-core=1.8.4"]

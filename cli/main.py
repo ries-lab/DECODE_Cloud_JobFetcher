@@ -43,14 +43,10 @@ def main() -> None:
             container = None
             jobs = api_worker.fetch_jobs(
                 limit=1,
-                cpu_cores=worker_info["sys"]["cores"],
-                memory=worker_info["sys"]["memory"],
-                gpu_model=(
-                    worker_info["gpu"][0]["model"] if worker_info["gpu"] else None
-                ),
-                gpu_memory=(
-                    worker_info["gpu"][0]["memory"] if worker_info["gpu"] else None
-                ),
+                cpu_cores=worker_info.sys.cores,
+                memory=worker_info.sys.memory,
+                gpu_model=(worker_info.gpus[0].model if worker_info.gpus else None),
+                gpu_memory=(worker_info.gpus[0].memory if worker_info.gpus else None),
             )
 
             if len(jobs) == 0:
@@ -119,7 +115,7 @@ def main() -> None:
                         )
                     ],
                 }
-                if worker_info["gpu"]
+                if worker_info.gpus
                 else {}
             )
             container = docker_manager.auto_run(

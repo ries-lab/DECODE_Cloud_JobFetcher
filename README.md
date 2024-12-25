@@ -38,7 +38,7 @@ Copy the `.env.example` file to a `.env` file at the root of the directory and d
     - `PASSWORD`: password to authenticate to the [worker-facing API](https://github.com/ries-lab/DECODE_Cloud_WorkerAPI) (not required if `ACCESS_TOKEN` is set).
   - Local paths:
     - `PATH_BASE`: path to which to mount in the container (e.g., `/data`).
-    - `PATH_HOST_BASE`: path to mount on the host (e.g., `/home/user/temp/decode_cloud/mount).
+    - `PATH_HOST_BASE`: path to mount on the host (e.g., `/home/user/temp/decode_cloud/mount; must be absolute if running inside of a docker container).
   - Timeouts:
     - `TIMEOUT_JOB`: how often (in seconds) to look for a new job.
     - `TIMEOUT_STATUS`: how often (in seconds) to send a keep-alive signal while processing the job.

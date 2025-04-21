@@ -1,0 +1,114 @@
+name: Publish version to ECR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: choice
+        description: 'Version bump type (dev to just build an image to test)'
+        required: true
+        options:
+          - major
+          - minor
+          - patch
+          - dev
+        default: 'dev'
+
+jobs:
+  build-and-push:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Needed to access tags
+
+      - name: Validate branch for release
+        if: ${{ github.event.inputs.version != 'dev' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Error: Only 'dev' builds are allowed on non-main branches."
+          exit 1
+
+      - name: Determine version
+        id: versioning
+        run: |
+          VERSION_TYPE="${{ github.event.inputs.version }}"
+
+          if [ "$VERSION_TYPE" = "dev" ]; then
+            VERSION="dev-${GITHUB_SHA::7}"
+          else
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            [[ "$LAST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "Invalid tag format"; exit 1; }
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+            case "$VERSION_TYPE" in
+              major) ((MAJOR++)); MINOR=0; PATCH=0 ;;
+              minor) ((MINOR++)); PATCH=0 ;;
+              patch) ((PATCH++)) ;;
+              *) echo "Invalid version type: $VERSION_TYPE"; exit 1 ;;
+            esac
+            VERSION="v$MAJOR.$MINOR.$PATCH"
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+
+      - name: Login to AWS Public ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+
+      - name: Build and push Docker image
+        env:
+          VERSION: ${{ steps.versioning.outputs.VERSION }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: decode-cloud/job-fetcher
+        run: |
+          echo "Building image: $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION"
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION
+
+          if [[ "$VERSION" != dev-* ]]; then
+            echo "Tagging as latest"
+            docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION $ECR_REGISTRY/$ECR_REPOSITORY:latest
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          fi
+
+      - name: Write image info to summary
+        env:
+          VERSION: ${{ steps.versioning.outputs.VERSION }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          echo "## 🚀 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "\`$ECR_REGISTRY/$ECR_REPOSITORY:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          if [[ "$VERSION" != dev-* ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Also tagged as: \`$ECR_REGISTRY/$ECR_REPOSITORY:latest\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create and push annotated git tag
+        if: ${{ github.event.inputs.version != 'dev' }}
+        env:
+          VERSION: ${{ steps.versioning.outputs.VERSION }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: Create GitHub release
+        if: ${{ github.event.inputs.version != 'dev' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.versioning.outputs.VERSION }}
+          name: Release ${{ steps.versioning.outputs.VERSION }}
+          generate_release_notes: true

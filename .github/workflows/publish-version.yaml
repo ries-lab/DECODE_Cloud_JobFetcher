@@ -35,24 +35,40 @@ jobs:
         id: versioning
         run: |
           VERSION_TYPE="${{ github.event.inputs.version }}"
-
           if [ "$VERSION_TYPE" = "dev" ]; then
             VERSION="dev-${GITHUB_SHA::7}"
           else
             LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            [[ "$LAST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || { echo "Invalid tag format"; exit 1; }
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-            PATCH="${BASH_REMATCH[3]}"
+            echo "Found LAST_TAG: $LAST_TAG"
+            if [[ "$LAST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              MAJOR="${BASH_REMATCH[1]}"
+              MINOR="${BASH_REMATCH[2]}"
+              PATCH="${BASH_REMATCH[3]}"
+            else
+              echo "Invalid tag format: $LAST_TAG"
+              exit 1
+            fi
             case "$VERSION_TYPE" in
-              major) ((MAJOR++)); MINOR=0; PATCH=0 ;;
-              minor) ((MINOR++)); PATCH=0 ;;
-              patch) ((PATCH++)) ;;
-              *) echo "Invalid version type: $VERSION_TYPE"; exit 1 ;;
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+              *)
+                echo "Invalid version type: $VERSION_TYPE"
+                exit 1
+                ;;
             esac
             VERSION="v$MAJOR.$MINOR.$PATCH"
           fi
-
+          echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials
@@ -60,6 +76,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # required for Public ECR
 
       - name: Login to AWS Public ECR
         id: login-ecr
@@ -67,14 +84,23 @@ jobs:
         with:
           registry-type: public
 
+      - name: Get Python version
+        id: get-python-version
+        run: |
+          pip install toml
+          PYTHON_VERSION=$(python -c 'import scripts.vars; scripts.vars.get_python_version()')
+          echo "Python version: $PYTHON_VERSION"
+          echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         env:
           VERSION: ${{ steps.versioning.outputs.VERSION }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY: public.ecr.aws/g0e9g3b1
           ECR_REPOSITORY: decode-cloud/job-fetcher
+          PYTHON_VERSION: ${{ steps.get-python-version.outputs.PYTHON_VERSION }}
         run: |
           echo "Building image: $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION"
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION .
+          docker build --build-arg PYTHON_VERSION=$PYTHON_VERSION -t $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION
 
           if [[ "$VERSION" != dev-* ]]; then
@@ -83,17 +109,12 @@ jobs:
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           fi
 
-      - name: Write image info to summary
-        env:
-          VERSION: ${{ steps.versioning.outputs.VERSION }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        run: |
           echo "## 🚀 Docker Image Published" >> $GITHUB_STEP_SUMMARY
           echo "\`$ECR_REGISTRY/$ECR_REPOSITORY:$VERSION\`" >> $GITHUB_STEP_SUMMARY
           if [[ "$VERSION" != dev-* ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Also tagged as: \`$ECR_REGISTRY/$ECR_REPOSITORY:latest\`" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Create and push annotated git tag
         if: ${{ github.event.inputs.version != 'dev' }}

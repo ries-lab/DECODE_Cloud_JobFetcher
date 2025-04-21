@@ -4,31 +4,12 @@ from pathlib import Path
 import docker
 import dotenv
 import GPUtil
-import toml
+
+from scripts.vars import get_git_branch, get_package_name, get_python_version
 
 
 def _get_client() -> docker.DockerClient:
     return docker.from_env()
-
-
-def _get_package_name() -> str:
-    with open("pyproject.toml", "r") as file:
-        pyproject_data = toml.load(file)
-    pkg_name = pyproject_data["tool"]["poetry"]["name"]
-    assert isinstance(pkg_name, str)
-    return pkg_name
-
-
-def _get_python_version() -> str:
-    with open("pyproject.toml", "r") as file:
-        pyproject_data = toml.load(file)
-    python_version = pyproject_data["tool"]["poetry"]["dependencies"]["python"]
-    assert isinstance(python_version, str)
-    return python_version
-
-
-def _get_git_branch() -> str:
-    return os.popen("git branch --show-current").read().strip()
 
 
 def build() -> None:
@@ -38,11 +19,11 @@ def build() -> None:
     client = _get_client()
     client.images.build(
         path=os.path.join(os.path.dirname(__file__), ".."),
-        tag=f"{_get_package_name()}:{_get_git_branch()}",
+        tag=f"{get_package_name()}:{get_git_branch()}",
         nocache=True,
         rm=True,
         pull=True,
-        buildargs={"PYTHON_VERSION": _get_python_version()},
+        buildargs={"PYTHON_VERSION": get_python_version()},
     )
 
 
@@ -57,7 +38,7 @@ def run() -> None:
     )
     os.makedirs(path_host_base, exist_ok=True)
     client.containers.run(
-        image=f"{_get_package_name()}:{_get_git_branch()}",
+        image=f"{get_package_name()}:{get_git_branch()}",
         environment={k: v for k, v in dotenv.dotenv_values().items() if v is not None},
         volumes={
             str(Path.home() / ".aws" / "credentials"): {
@@ -85,7 +66,7 @@ def stop() -> None:
     """
     client = _get_client()
     for container in client.containers.list(ignore_removed=True):
-        if container.attrs["Config"]["Image"].startswith(_get_package_name() + ":"):
+        if container.attrs["Config"]["Image"].startswith(get_package_name() + ":"):
             container.remove(force=True)
 
 
@@ -96,6 +77,6 @@ def cleanup() -> None:
     """
     stop()
     client = _get_client()
-    for image in client.images.list(name=_get_package_name()):
+    for image in client.images.list(name=get_package_name()):
         client.images.remove(image.id, force=True)
     client.images.prune(filters={"dangling": True})

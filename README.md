@@ -115,14 +115,18 @@ Note: this is reliant on an AWS user with the following policy:
                 "ecr-public:UntagResource",
                 "ecr-public:TagResource",
                 "ecr-public:CompleteLayerUpload",
-                "ecr-public:BatchCheckLayerAvailability"
+                "ecr-public:BatchCheckLayerAvailability",
+                "ecr-public:GetAuthorizationToken"
             ],
             "Resource": "arn:aws:ecr-public::<account-id>:repository/decode-cloud/job-fetcher"
         },
         {
             "Sid": "VisualEditor1",
             "Effect": "Allow",
-            "Action": "ecr-public:GetAuthorizationToken",
+            "Action": [
+              "ecr-public:GetAuthorizationToken",
+              "sts:GetServiceBearerToken"
+            ],
             "Resource": "*"
         }
     ]

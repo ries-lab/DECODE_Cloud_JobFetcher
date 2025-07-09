@@ -13,8 +13,8 @@ import GPUtil
 from loguru import logger
 from requests.exceptions import HTTPError
 
-from fetcher import api, info, io, status
-from fetcher.docker import manager
+from decode_job_fetcher import api, info, io, status
+from decode_job_fetcher.docker import manager
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from fetcher.models import FileType
+from ..models import FileType
 
 
 class HardwareSpecs(BaseModel):

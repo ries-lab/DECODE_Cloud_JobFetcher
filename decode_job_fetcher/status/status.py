@@ -6,7 +6,7 @@ import docker.models
 import docker.models.containers
 from loguru import logger
 
-from fetcher.models import Status as JobStatus
+from ..models import Status as JobStatus
 
 
 class Status:

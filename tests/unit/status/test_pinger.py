@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from fetcher.status import pinger
+from decode_job_fetcher.status import pinger
 
 
 @pytest.fixture

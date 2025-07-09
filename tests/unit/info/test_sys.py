@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from fetcher.info import sys
+from decode_job_fetcher.info import sys
 
 
 def test_collect(mocker: MockerFixture) -> None:

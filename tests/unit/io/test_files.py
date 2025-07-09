@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from fetcher.io import files
+from decode_job_fetcher.io import files
 
 
 @pytest.mark.parametrize("delegate", ["rglob", "glob"])

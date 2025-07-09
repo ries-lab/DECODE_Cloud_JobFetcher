@@ -1,10 +1,18 @@
 import os
 import platform
 import socket
+from typing import TYPE_CHECKING
 
-import GPUtil
 import psutil
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    import GPUtil
+else:
+    try:
+        import GPUtil
+    except ImportError:
+        GPUtil = None  # type: ignore
 
 
 class HostInfo(BaseModel):
@@ -67,6 +75,8 @@ def collect_sys() -> CPUInfo:
 
 
 def collect_gpus() -> list[GPUInfo]:
+    if GPUtil is None:
+        return []
     return [
         GPUInfo(
             model=gpu.name,

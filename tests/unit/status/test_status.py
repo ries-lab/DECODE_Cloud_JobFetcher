@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from fetcher.status import status
+from decode_job_fetcher.status import status
 
 
 @pytest.fixture

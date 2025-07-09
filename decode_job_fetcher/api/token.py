@@ -4,7 +4,7 @@ from typing import Any
 
 import boto3
 
-from fetcher.session import session
+from ..session import session
 
 
 def get_access_info(api_url: str) -> dict[str, Any]:

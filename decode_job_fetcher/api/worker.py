@@ -4,9 +4,9 @@ from typing import Any
 
 import requests
 
-from fetcher.api import model, token
-from fetcher.models import FileType, Status
-from fetcher.session import session
+from . import model, token
+from ..models import FileType, Status
+from ..session import session
 
 
 class API:

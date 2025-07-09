@@ -4,9 +4,9 @@ from typing import Any, Generator
 
 import requests
 
-from fetcher.api import worker
-from fetcher.models import FileType
-from fetcher.session import session
+from ..api import worker
+from ..models import FileType
+from ..session import session
 
 
 class PathAPIbase:

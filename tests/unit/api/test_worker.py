@@ -1,4 +1,4 @@
-from fetcher.api import worker
+from decode_job_fetcher.api import worker
 
 
 def test_api() -> None:

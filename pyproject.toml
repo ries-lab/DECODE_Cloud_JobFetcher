@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "fetcher"
+name = "decode_job_fetcher"
 version = "0.1.0"
 description = "Job fetcher for workers of DECODE OpenCloud."
 authors = ["Arthur Jaques <arthur.jaques@hispeed.ch>"]
 readme = "README.md"
+packages = [{include = "decode_job_fetcher"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -39,7 +40,7 @@ types-toml = "^0.10.8.20240310"
 pytest-mock = "^3.14.0"
 
 [build-system]
-requires = ["poetry-core=1.8.4"]
+requires = ["poetry-core>=1.8.4"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]

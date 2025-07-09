@@ -60,8 +60,9 @@ jobs:
         env:
           VERSION: ${{ steps.set-version.outputs.VERSION }}
         run: |
-          if gh release view "$VERSION" > /dev/null 2>&1; then
-            echo "## ⚠️ Release $VERSION already exists on GitHub. Skipping publish." >> $GITHUB_STEP_SUMMARY
+          git fetch --tags
+          if [ -n "$(git tag -l "$VERSION")" ]; then
+            echo "## ⚠️ Tag $VERSION already exists in git. Skipping publish." >> $GITHUB_STEP_SUMMARY
             echo "skip_publish=true" >> $GITHUB_OUTPUT
           else
             echo "skip_publish=false" >> $GITHUB_OUTPUT

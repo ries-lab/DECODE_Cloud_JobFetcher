@@ -1,18 +1,19 @@
-name: Publish version to ECR
+name: Publish version to GitHub and ECR
 
 on:
   workflow_dispatch:
     inputs:
       version:
         type: choice
-        description: 'Version bump type (dev to just build an image to test)'
+        description: 'Publish type (dev for test image, prod for release from pyproject.toml)'
         required: true
         options:
-          - major
-          - minor
-          - patch
           - dev
+          - prod
         default: 'dev'
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-push:
@@ -23,50 +24,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Needed to access tags
+          fetch-depth: 0
 
-      - name: Validate branch for release
-        if: ${{ github.event.inputs.version != 'dev' && github.ref != 'refs/heads/main' }}
+      - name: Set version type
+        id: set-version-type
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION_TYPE="prod"
+          else
+            VERSION_TYPE="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION_TYPE=$VERSION_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Validate branch for dev
+        if: ${{ steps.set-version-type.outputs.VERSION_TYPE == 'prod' && github.ref != 'refs/heads/main' }}
         run: |
           echo "Error: Only 'dev' builds are allowed on non-main branches."
           exit 1
 
-      - name: Determine version
-        id: versioning
+      - name: Set version
+        id: set-version
         run: |
-          VERSION_TYPE="${{ github.event.inputs.version }}"
-          if [ "$VERSION_TYPE" = "dev" ]; then
-            VERSION="dev-${GITHUB_SHA::7}"
+          if [ "${{ steps.set-version-type.outputs.VERSION_TYPE }}" = "prod" ]; then
+            pip install poetry
+            VERSION=$(poetry version -s)
           else
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "Found LAST_TAG: $LAST_TAG"
-            if [[ "$LAST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-              MAJOR="${BASH_REMATCH[1]}"
-              MINOR="${BASH_REMATCH[2]}"
-              PATCH="${BASH_REMATCH[3]}"
-            else
-              echo "Invalid tag format: $LAST_TAG"
-              exit 1
-            fi
-            case "$VERSION_TYPE" in
-              major)
-                MAJOR=$((MAJOR + 1))
-                MINOR=0
-                PATCH=0
-                ;;
-              minor)
-                MINOR=$((MINOR + 1))
-                PATCH=0
-                ;;
-              patch)
-                PATCH=$((PATCH + 1))
-                ;;
-              *)
-                echo "Invalid version type: $VERSION_TYPE"
-                exit 1
-                ;;
-            esac
-            VERSION="v$MAJOR.$MINOR.$PATCH"
+            VERSION="dev-${GITHUB_SHA::7}"
           fi
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
@@ -84,6 +67,21 @@ jobs:
         with:
           registry-type: public
 
+      - name: Check if image exists (prod)
+        if: ${{ steps.set-version-type.outputs.VERSION_TYPE == 'prod' }}
+        id: check-image
+        env:
+          VERSION: ${{ steps.set-version.outputs.VERSION }}
+          ECR_REGISTRY: public.ecr.aws/g0e9g3b1
+          ECR_REPOSITORY: decode-cloud/job-fetcher
+        run: |
+          set -e
+          IMAGE_EXISTS=$(aws ecr-public describe-images --region us-east-1 --repository-name $ECR_REPOSITORY --image-ids imageTag=$VERSION 2>/dev/null || echo "notfound")
+          if [[ "$IMAGE_EXISTS" != "notfound" && "$IMAGE_EXISTS" != "" ]]; then
+            echo "## ⚠️ Docker image $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION already exists. Skipping publish." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
       - name: Get Python version
         id: get-python-version
         run: |
@@ -94,7 +92,7 @@ jobs:
 
       - name: Build and push Docker image
         env:
-          VERSION: ${{ steps.versioning.outputs.VERSION }}
+          VERSION: ${{ steps.set-version.outputs.VERSION }}
           ECR_REGISTRY: public.ecr.aws/g0e9g3b1
           ECR_REPOSITORY: decode-cloud/job-fetcher
           PYTHON_VERSION: ${{ steps.get-python-version.outputs.PYTHON_VERSION }}
@@ -117,9 +115,9 @@ jobs:
           fi
 
       - name: Create and push annotated git tag
-        if: ${{ github.event.inputs.version != 'dev' }}
+        if: ${{ steps.set-version-type.outputs.VERSION_TYPE == 'prod' }}
         env:
-          VERSION: ${{ steps.versioning.outputs.VERSION }}
+          VERSION: ${{ steps.set-version.outputs.VERSION }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -127,9 +125,9 @@ jobs:
           git push origin "$VERSION"
 
       - name: Create GitHub release
-        if: ${{ github.event.inputs.version != 'dev' }}
+        if: ${{ steps.set-version-type.outputs.VERSION_TYPE == 'prod' }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.versioning.outputs.VERSION }}
-          name: Release ${{ steps.versioning.outputs.VERSION }}
+          tag_name: ${{ steps.set-version.outputs.VERSION }}
+          name: Release ${{ steps.set-version.outputs.VERSION }}
           generate_release_notes: true

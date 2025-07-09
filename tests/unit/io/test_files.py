@@ -18,7 +18,7 @@ def test_path_api_up_construction(delegate: str, tmp_path: Path) -> None:
         tmp_path,
         "output",
         Path(""),
-        None,  # type: ignore
+        None,
     )
     p_files = list(getattr(p, delegate)("*"))
 

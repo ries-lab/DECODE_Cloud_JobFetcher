@@ -1,4 +1,5 @@
-from typing import Any, Optional, Literal
+from typing import Any, Literal, Optional
+
 from pydantic import BaseModel
 
 class HardwareSpecs(BaseModel):

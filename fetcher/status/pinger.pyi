@@ -1,5 +1,5 @@
+from abc import ABC, abstractmethod
 from typing import Callable
-from abc import abstractmethod, ABC
 
 class Pinger(ABC):
     @abstractmethod

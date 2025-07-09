@@ -1,5 +1,5 @@
-from typing import Any
 import abc
+from typing import Any
 
 class AccessToken(abc.ABC):
     @property

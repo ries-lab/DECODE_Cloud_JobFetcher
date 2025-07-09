@@ -1,6 +1,7 @@
+from abc import abstractmethod
 from pathlib import Path
 from typing import Any, Generator
-from abc import abstractmethod
+
 import requests
 
 class PathAPIbase:

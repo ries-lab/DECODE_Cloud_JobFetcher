@@ -1,5 +1,6 @@
-from typing import Any, Callable
 from abc import abstractmethod
+from typing import Any, Callable
+
 import docker
 
 class Status:
@@ -7,7 +8,7 @@ class Status:
         self,
         ping: Callable[[Any, int | None, str | None], Any],
         *args: list[Any],
-        **kwargs: dict[str, Any]
+        **kwargs: dict[str, Any],
     ): ...
     @abstractmethod
     def update(self) -> None: ...

@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Any
+
 import requests
+
 from fetcher.api import model, token
 
 class API:
@@ -25,12 +27,12 @@ class JobAPI:
     @property
     def file_post_url(self) -> str: ...
     def ping(
-        self, status, exit_code: int | None, body: str | None
+        self, status: str, exit_code: int | None, body: str | None
     ) -> requests.Response: ...
     def get_file(self, file_id: str, path: Path) -> requests.Response: ...
     def put_file(
         self, path: Path, path_api: str | Path | None, file_type: str
     ) -> requests.Response: ...
     def put_file_native(
-        self, path: Path, f_type, path_api: Path
+        self, path: Path, f_type: str, path_api: Path
     ) -> requests.Response: ...

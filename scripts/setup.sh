@@ -1,3 +1,2 @@
-POETRY_VERSION=$(grep -Po '(?<=^requires = \["poetry-core=)[^"]*' pyproject.toml)
-pip install "poetry==$POETRY_VERSION"
+pip install "poetry==1.8.4"
 poetry install --no-dev --no-interaction --no-ansi

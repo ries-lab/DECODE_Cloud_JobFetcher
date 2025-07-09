@@ -62,13 +62,10 @@ jobs:
         run: |
           if gh release view "$VERSION" > /dev/null 2>&1; then
             echo "## ⚠️ Release $VERSION already exists on GitHub. Skipping publish." >> $GITHUB_STEP_SUMMARY
-            echo "skip_publish=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_publish=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
       - name: Get Python version
-        if: steps.check-release.outputs.skip_publish != 'true'
         id: get-python-version
         run: |
           pip install toml
@@ -77,7 +74,6 @@ jobs:
           echo "PYTHON_VERSION=$PYTHON_VERSION" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials
-        if: steps.check-release.outputs.skip_publish != 'true'
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
@@ -85,14 +81,12 @@ jobs:
           aws-region: us-east-1  # required for Public ECR
 
       - name: Login to AWS Public ECR
-        if: steps.check-release.outputs.skip_publish != 'true'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
         with:
           registry-type: public
 
       - name: Build and push Docker image
-        if: steps.check-release.outputs.skip_publish != 'true'
         env:
           VERSION: ${{ steps.set-version.outputs.VERSION }}
           ECR_REGISTRY: public.ecr.aws/g0e9g3b1
@@ -117,7 +111,7 @@ jobs:
           fi
 
       - name: Create and push annotated git tag
-        if: steps.check-release.outputs.skip_publish != 'true' && steps.set-version-type.outputs.VERSION_TYPE == 'prod'
+        if: steps.set-version-type.outputs.VERSION_TYPE == 'prod'
         env:
           VERSION: ${{ steps.set-version.outputs.VERSION }}
         run: |
@@ -127,7 +121,7 @@ jobs:
           git push origin "$VERSION"
 
       - name: Create GitHub release
-        if: steps.check-release.outputs.skip_publish != 'true' && steps.set-version-type.outputs.VERSION_TYPE == 'prod'
+        if: steps.set-version-type.outputs.VERSION_TYPE == 'prod'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.set-version.outputs.VERSION }}

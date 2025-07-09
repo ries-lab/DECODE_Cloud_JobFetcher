@@ -19,3 +19,8 @@ repos:
         entry: poetry run mypy
         language: system
         types: [python]
+      - id: mypy-stubtest
+        name: stubtest
+        entry: poetry run python -m mypy.stubtest fetcher
+        language: system
+        types: [python]

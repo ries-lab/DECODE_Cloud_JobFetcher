@@ -28,6 +28,8 @@ jobs:
       run: poetry run ruff format --check .
     - name: Mypy check
       run: poetry run mypy .
+    - name: Stubs check
+      run: poetry run python -m mypy.stubtest fetcher
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 60

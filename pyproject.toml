@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fetcher"
-version = "0.1.2"
+version = "0.2.0"
 description = "Job fetcher for workers of DECODE OpenCloud."
 authors = ["Arthur Jaques <arthur.jaques@hispeed.ch>"]
 readme = "README.md"

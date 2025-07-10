@@ -51,8 +51,8 @@ For this, you can for example:
 ### Prepare the development environment
 We use [poetry](https://python-poetry.org/) for dependency tracking.
 See online guides on how to use it, but this setup should work:
- - `conda create -n "3-11-10" python=3.11.10`
- - `conda activate 3-11-10`
+ - `conda create -n "3-11-13" python=3.11.13`
+ - `conda activate 3-11-13`
  - `pip install pipx`
  - `pipx install poetry`
  - `poetry env use /path/to/conda/env/bin/python`

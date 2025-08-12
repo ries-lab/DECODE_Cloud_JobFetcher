@@ -45,7 +45,7 @@ def main() -> None:
         container = None
         job_id = None
         path_job = None
-        
+
         try:
             jobs = api_worker.fetch_jobs(
                 limit=1,
@@ -179,12 +179,12 @@ def main() -> None:
                     container.kill()
             else:
                 raise e
-        
+
         finally:
             # Clean up resources after successful job run AND upload
             if job_id:
                 logger.info(f"Cleaning up job {job_id}")
-                
+
                 # Clean up Docker container
                 if container:
                     try:
@@ -192,22 +192,28 @@ def main() -> None:
                             logger.info(f"Stopping running container for job {job_id}")
                             container.stop()
                     except Exception as e:
-                        logger.warning(f"Failed to stop container for job {job_id}: {e}")
-                    
+                        logger.warning(
+                            f"Failed to stop container for job {job_id}: {e}"
+                        )
+
                     try:
                         logger.info(f"Removing container for job {job_id}")
                         container.remove()
                     except Exception as e:
-                        logger.warning(f"Failed to remove container for job {job_id}: {e}")
-                
+                        logger.warning(
+                            f"Failed to remove container for job {job_id}: {e}"
+                        )
+
                 # Clean up job directory
                 if path_job and path_job.exists():
                     try:
                         logger.info(f"Removing job directory {path_job}")
                         shutil.rmtree(path_job)
                     except Exception as e:
-                        logger.warning(f"Failed to clean up job directory {path_job}: {e}")
-                
+                        logger.warning(
+                            f"Failed to clean up job directory {path_job}: {e}"
+                        )
+
                 logger.info(f"Job {job_id} cleanup completed")
 
 

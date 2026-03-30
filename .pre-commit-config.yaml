@@ -25,3 +25,4 @@ repos:
         language: system
         types: [python]
         files: ^fetcher/
+        pass_filenames: false

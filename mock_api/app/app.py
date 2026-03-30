@@ -11,6 +11,16 @@ async def root() -> dict[str, str]:
     return {"message": "Hello World"}
 
 
+@app.get("/access_info")
+async def access_info() -> dict[str, Any]:
+    return {
+        "cognito": {
+            "client_id": "test_client_id",
+            "region": "us-east-1",
+        }
+    }
+
+
 @app.get("/files/{file_id}/url")
 async def file_get(file_id: str) -> dict[str, str]:
     # return presigned public URL
@@ -74,13 +84,11 @@ class JobSpecs(BaseModel):
 
 @app.get("/jobs")
 async def job_get(
-    hostname: str,
     cpu_cores: int,
     memory: int,
     env: str | None = None,
     gpu_model: str | None = None,
-    gpu_archi: str | None = None,
-    gpu_mem: int | None = None,
+    gpu_memory: int | None = None,
     groups: list[str] | None = None,
     limit: int = 1,
     older_than: int | None = None,
@@ -89,68 +97,28 @@ async def job_get(
         "5": {
             "app": {
                 "cmd": [
+                    "python",
+                    "-u",
+                    "app/main.py",
                     "--config-dir=/data/config",
                     "--config-name=config",
-                    "Paths.experiment=/data/model",
+                    "Paths.experiment=/data/artifact",
                     "Paths.logging=/data/log",
                 ],
                 "env": {},
             },
             "handler": {
-                "image_url": "public.ecr.aws/d2r7a3u1/decode:dev_multiphot_tar",
+                "image_url": "mock-decode:test",
                 "aws_job_def": "decode_train_latest",
                 "files_down": {
                     "config/config.yaml": "config_file_id",
-                    "data/beads.mat": "beads_file_id",
-                    "data/trafo.mat": "trafo_file_id",
                 },
-                "files_up": {"log": "log", "artifact": "model"},
+                "files_up": {"log": "log", "artifact": "artifact"},
             },
             "meta": {"job_id": 9, "date_created": "2023-09-20T14:14:37.596024"},
             "hardware": {},
         }
     }
-    # return {
-    #     "a6": JobSpecs(
-    #         app=AppSpecs(
-    #             cmd=[
-    #                 # fmt: off
-    #                 # "python", "-m", "cli.train",
-    #                 "--config-dir", "/data/config/",
-    #                 "--config-name", "config",
-    #                 "Trainer.max_epochs=1",
-    #                 # fmt: on
-    #             ]
-    #         ),
-    #         handler=HandlerSpecs(
-    #             image_url="decode:dev_multiphot_tar",
-    #             files_down={
-    #                 "config/config.yaml": "config_a6",
-    #                 "data/beads.mat": "beads_a6",
-    #                 "data/trafo.mat": "trafo_a6",
-    #             },
-    #             files_up={"artifact": "output/", "log": "log/"},
-    #         ),
-    #         meta=MetaSpecs(date_created="2021-08-01T12:00:00+00:00"),
-    #     )
-    # }
-    # return {
-    #     "mock_a6": JobSpecs(
-    #         app=AppSpecs(
-    #             cmd=None
-    #         ),
-    #         handler=HandlerSpecs(
-    #             image_url="mock_decode:0.0.6",
-    #             files_down={
-    #                 "config/config.yaml": "config_a6",
-    #                 "data/beads.mat": "beads_a6",
-    #                 "data/trafo.mat": "trafo_a6",
-    #             },
-    #             files_up={"artifact": "artifact/", "log": "log/", "output": "output/"},
-    #         ),
-    #         meta=MetaSpecs(date_created="2021-08-01T12:00:00+00:00"),
-    #     )
-    # }
 
 
 @app.post("/jobs/{job_id}/files/url")

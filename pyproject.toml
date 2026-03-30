@@ -38,6 +38,7 @@ python-multipart = "^0.0.20"
 types-psutil = "^6.1.0.20241102"
 types-toml = "^0.10.8.20240310"
 pytest-mock = "^3.14.0"
+ipython = "^9.5.0"
 
 [build-system]
 requires = ["poetry-core==1.9.1"]
@@ -65,3 +66,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = "GPUtil.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true

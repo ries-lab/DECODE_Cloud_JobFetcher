@@ -10,8 +10,9 @@ if __name__ == "__main__":
 
     # fake some output
     print("Faking some output")
-    paths_out = [Path(p) for p in ["/data/output", "/data/log", "/data/artifact"]]
+    paths_out = [Path(p) for p in ["/data/log", "/data/artifact"]]
     for p in paths_out:
+        p.mkdir(parents=True, exist_ok=True)
         p_rand = p / "random.txt"
         p_rand.write_text("Random text.")
 
@@ -21,3 +22,4 @@ if __name__ == "__main__":
     [print(p) for p in paths]
 
     print("Done")
+    sys.exit(os.environ.get("EXIT_CODE", 0))

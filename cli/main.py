@@ -11,13 +11,13 @@ import docker.models.containers
 import dotenv
 import GPUtil
 from loguru import logger
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, RequestException
 
 from fetcher import api, info, io, status
 from fetcher.docker import manager
 
 
-def main() -> None:
+def main(max_iters: int | None = None) -> None:
     dotenv.load_dotenv(override=True)
 
     TIMEOUT_JOB = int(os.getenv("TIMEOUT_JOB", 10))
@@ -31,7 +31,6 @@ def main() -> None:
     access_info = api.token.get_access_info(os.environ["API_URL"])["cognito"]
     api_worker = api.worker.API(
         os.environ["API_URL"],
-        # api.token.AccessTokenFixed(os.getenv("ACCESS_TOKEN")),
         api.token.AccessTokenAuth(
             client_id=access_info["client_id"],
             region=access_info["region"],
@@ -41,10 +40,13 @@ def main() -> None:
     )
     worker_info = info.sys.collect()
 
-    while True:
+    iters = 0
+    while max_iters is None or iters < max_iters:
+        iters += 1
         container = None
         job_id = None
         path_job = None
+        pinger: status.pinger.ParallelPinger | status.pinger.SerialPinger | None = None
 
         try:
             jobs = api_worker.fetch_jobs(
@@ -67,16 +69,17 @@ def main() -> None:
             logger.info(f"Pulled job {job_id}.")
             api_job = api.worker.JobAPI(job_id, api_worker)
 
-            pinger_pre = status.pinger.ParallelPinger(
+            pinger = status.pinger.ParallelPinger(
                 ping=status.status.ConstantStatus(
                     status="preprocessing", ping=api_job.ping
                 ).ping,
                 timeout=TIMEOUT_STATUS,
             )
-            pinger_pre.start()
+            pinger.start()
             logger.info(f"Preprocessing job {job_id}")
 
             path_job = path_base / job_id
+            path_job.mkdir(mode=path_base.stat().st_mode, exist_ok=True)
 
             handler = job.handler
             files_up = (
@@ -136,37 +139,36 @@ def main() -> None:
                 ),
             )
 
-            pinger_pre.stop()
+            pinger.stop()
 
             # get and keep updating its status
-            pinger_run = status.pinger.SerialPinger(
+            pinger = status.pinger.SerialPinger(
                 ping=status.status.DockerStatus(container, ping=api_job.ping).ping,
                 timeout=TIMEOUT_STATUS,
             )
             logger.info(f"Running job {job_id}")
-            pinger_run.start()
-            pinger_run.stop()
+            pinger.start()
+            pinger.stop()
             res = container.wait()
             logger.info(f"Job {job_id} finished with exit code {res['StatusCode']}")
             logger.info(f"Postprocessing job {job_id}")
 
             # upload result
-            pinger_post = status.pinger.ParallelPinger(
+            pinger = status.pinger.ParallelPinger(
                 ping=status.status.ConstantStatus(
                     status="postprocessing", ping=api_job.ping
                 ).ping,
                 timeout=TIMEOUT_STATUS,
             )
-            pinger_post.start()
+            pinger.start()
             p_upload = itertools.chain(*[p.rglob("*") for p in files_up])
             [p.push() for p in p_upload if p.is_file()]
-            pinger_post.stop()
+            pinger.stop()
 
             if res["StatusCode"] == 0:
                 api_job.ping(status="finished", exit_code=0, body="")
             else:
                 logs = str(container.logs())
-                print(logs)
                 logs = f"Logs:\n{logs[-1000:]}"
                 api_job.ping(status="error", exit_code=res["StatusCode"], body=logs)
 
@@ -180,7 +182,16 @@ def main() -> None:
             else:
                 raise e
 
+        except RequestException as e:
+            logger.warning(
+                f"API unavailable ({type(e).__name__}): {e}. "
+                f"Retrying in {TIMEOUT_JOB} seconds."
+            )
+            time.sleep(TIMEOUT_JOB)
+
         finally:
+            if pinger:
+                pinger.stop()
             # Clean up resources after successful job run AND upload
             if job_id:
                 logger.info(f"Cleaning up job {job_id}")
@@ -188,6 +199,7 @@ def main() -> None:
                 # Clean up Docker container
                 if container:
                     try:
+                        container.reload()
                         if container.status == "running":
                             logger.info(f"Stopping running container for job {job_id}")
                             container.stop()

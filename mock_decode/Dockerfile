@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY . .
 
-CMD ["python", "-u", "app/app.py"]
+CMD ["python", "-u", "app/main.py"]
 
 # build as
 # docker build --build-arg VERSION=$(cat VERSION) -t mock_decode:$(cat VERSION) .

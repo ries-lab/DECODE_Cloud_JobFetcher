@@ -5,7 +5,6 @@ from typing import Any
 import requests
 
 from fetcher.api import model, token
-from fetcher.models import FileType, Status
 from fetcher.session import session
 
 
@@ -69,7 +68,7 @@ class JobAPI:
 
     def ping(
         self,
-        status: Status,
+        status: str,
         exit_code: int | None,
         body: str | None,
     ) -> requests.Response:
@@ -80,7 +79,7 @@ class JobAPI:
             runtime_details = (runtime_details or "") + body
         return session.put(
             self.status_url,
-            params={"status": status, "runtime_details": body},
+            params={"status": status, "runtime_details": runtime_details},
             headers=self._base_api.header,
         )
 
@@ -103,10 +102,11 @@ class JobAPI:
         file_name = (
             str(os.path.split(path_api)[-1]) if path_api is not None else path.name
         )
-        f = {"file": (file_name, open(path, "rb"))}
-        return session.request(**request_kwargs, files=f)
+        with open(path, "rb") as fh:
+            f = {"file": (file_name, fh)}
+            return session.request(**request_kwargs, files=f)
 
     def put_file_native(
-        self, path: Path, f_type: FileType, path_api: Path
+        self, path: Path, f_type: str, path_api: Path
     ) -> requests.Response:
         return self.put_file(path, path_api, file_type=f_type)

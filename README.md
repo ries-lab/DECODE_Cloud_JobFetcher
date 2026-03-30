@@ -39,7 +39,7 @@ Alternatively, these fields can be passed as environment variables to the Docker
 ### Run the docker image
 `docker run --env-file .env --gpus '"device=0"' -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway public.ecr.aws/g0e9g3b1/decode-cloud/job-fetcher:latest`, where:
  - `<PATH_HOST_BASE>` and `<PATH_BASE>` are set as above.
- - `--add-host=host.docker.internal:host-gateway jobfetcher:latest` is required only when running Linux.
+ - `--add-host=host.docker.internal:host-gateway` is required only when running Linux.
  - The `--gpus '"device=0"'` option specifies which GPUs the worker should be able to use. `--gpus all` selects all GPUs, but you typically want to select which GPU to reserve, and if you have many, run multiple workers each with one reserved GPU.
 Likely, you will want to run the image in the background.
 For this, you can for example:

@@ -1,6 +1,7 @@
 from typing import Any, cast
 
 import docker
+import docker.errors
 import docker.models
 import docker.models.containers
 import docker.models.images
@@ -58,4 +59,7 @@ class Manager:
     def pull(self) -> docker.models.images.Image:
         # always pull: if the image is already present and up-to-date,
         # it will be a no-op taking little time
-        return self._client.images.pull(self.image)
+        try:
+            return self._client.images.pull(self.image)
+        except docker.errors.ImageNotFound:  # fallback to local image
+            return self._client.images.get(self.image)

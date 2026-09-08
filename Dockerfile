@@ -11,4 +11,5 @@ WORKDIR /app
 
 COPY . /app/
 RUN chmod +x /app/scripts/setup.sh && /app/scripts/setup.sh
+ENV PATH_BASE=/data
 CMD ["poetry", "run", "run"]

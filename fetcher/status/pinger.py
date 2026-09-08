@@ -37,7 +37,8 @@ class ParallelPinger:
 
     def stop(self) -> None:
         self._stop_event.set()
-        self._thread.join()
+        if self._thread.is_alive():
+            self._thread.join()
 
 
 class SerialPinger:

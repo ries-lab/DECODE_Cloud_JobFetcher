@@ -10,7 +10,7 @@ import uvicorn
 
 @pytest.fixture(scope="session", autouse=True)
 def docker_image() -> str:
-    image = "mock_decode"
+    image = "mock-decode"
     version = "test"
     tag = f"{image}:{version}"
 

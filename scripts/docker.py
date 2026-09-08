@@ -32,7 +32,8 @@ def run() -> None:
     Runs a Docker container for the current branch.
     """
     client = _get_client()
-    path_base = os.environ.get("PATH_BASE", "/data")
+    dotenv.load_dotenv()
+    path_base = "/data"
     path_host_base = os.environ.get(
         "PATH_HOST_BASE", os.path.join(os.path.dirname(__file__), "..", "data")
     )

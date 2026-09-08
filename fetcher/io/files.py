@@ -5,7 +5,6 @@ from typing import Any, Generator
 import requests
 
 from fetcher.api import worker
-from fetcher.models import FileType
 from fetcher.session import session
 
 
@@ -24,7 +23,7 @@ class PathAPIUp(PathAPIbase):
     def __init__(
         self,
         path: str | Path,
-        f_type: FileType,
+        f_type: str,
         path_api: str | Path,
         api: worker.JobAPI,
     ):
@@ -102,10 +101,11 @@ class APIUploader(Uploader):
         self, path: Path, type: str, path_api: str | None = None
     ) -> requests.Response:
         path_api = path.stem if path_api is None else path_api
-        f = {"file": (path_api, open(path, "rb"))}
-        response = session.post(
-            self._url, params={"path": path_api, "type": type}, files=f
-        )
+        with open(path, "rb") as fh:
+            f = {"file": (path_api, fh)}
+            response = session.post(
+                self._url, params={"path": path_api, "type": type}, files=f
+            )
         return response
 
 

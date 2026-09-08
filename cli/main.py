@@ -23,10 +23,12 @@ def main(max_iters: int | None = None) -> None:
     TIMEOUT_JOB = int(os.getenv("TIMEOUT_JOB", 10))
     TIMEOUT_STATUS = int(os.getenv("TIMEOUT_STATUS", 10))
 
-    path_base = Path(os.getenv("PATH_BASE", "/data"))
     path_host_base = Path(
         os.getenv("PATH_HOST_BASE", "~/temp/decode_cloud/mounts")
     ).expanduser()
+    # if running inside of a container, the container path to which path_host_base is mounted
+    env_path_base = os.getenv("PATH_BASE")
+    path_base = Path(env_path_base) if env_path_base else path_host_base
 
     access_info = api.token.get_access_info(os.environ["API_URL"])["cognito"]
     api_worker = api.worker.API(
@@ -79,7 +81,7 @@ def main(max_iters: int | None = None) -> None:
             logger.info(f"Preprocessing job {job_id}")
 
             path_job = path_base / job_id
-            path_job.mkdir(mode=path_base.stat().st_mode, exist_ok=True)
+            path_job.mkdir(mode=path_base.stat().st_mode, parents=True, exist_ok=True)
 
             handler = job.handler
             files_up = (
@@ -112,9 +114,7 @@ def main(max_iters: int | None = None) -> None:
                     read_only=False,
                 ),
             ]
-            docker_manager = manager.Manager(
-                image=job.handler.image_url,
-            )
+            docker_manager = manager.Manager(image=job.handler.image_url)
             kwargs_gpu = (
                 {
                     "device_requests": [
@@ -135,6 +135,8 @@ def main(max_iters: int | None = None) -> None:
                     mounts=mounts,
                     detach=True,
                     ipc_mode="host",
+                    # run as invoking user so that file permissions match
+                    user=f"{os.getuid()}:{os.getgid()}",
                     **kwargs_gpu,
                 ),
             )

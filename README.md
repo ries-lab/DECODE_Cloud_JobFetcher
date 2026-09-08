@@ -29,7 +29,6 @@ Typically, you will only need to fill in `USERNAME` and `PASSWORD`.
     - `USERNAME`: username to authenticate to the [worker-facing API](https://github.com/ries-lab/DECODE_Cloud_WorkerAPI) (not required if `ACCESS_TOKEN` is set).
     - `PASSWORD`: password to authenticate to the [worker-facing API](https://github.com/ries-lab/DECODE_Cloud_WorkerAPI) (not required if `ACCESS_TOKEN` is set).
   - Local paths:
-    - `PATH_BASE`: path to which to mount in the container (e.g., `/data`).
     - `PATH_HOST_BASE`: absolute path to mount on the host (e.g., `/home/user/temp/decode_cloud/mount).
   - Timeouts:
     - `TIMEOUT_JOB`: how often (in seconds) to look for a new job.
@@ -37,8 +36,8 @@ Typically, you will only need to fill in `USERNAME` and `PASSWORD`.
 Alternatively, these fields can be passed as environment variables to the Docker container directly, e.g., with the `-e` flag of the `docker run` command.
 
 ### Run the docker image
-`docker run --env-file .env --gpus '"device=0"' -v <PATH_HOST_BASE>:<PATH_BASE> -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway public.ecr.aws/g0e9g3b1/decode-cloud/job-fetcher:latest`, where:
- - `<PATH_HOST_BASE>` and `<PATH_BASE>` are set as above.
+`docker run --env-file .env --gpus '"device=0"' -v <PATH_HOST_BASE>:/data -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway public.ecr.aws/g0e9g3b1/decode-cloud/job-fetcher:latest`, where:
+ - `<PATH_HOST_BASE>` is set as above.
  - `--add-host=host.docker.internal:host-gateway` is required only when running Linux.
  - The `--gpus '"device=0"'` option specifies which GPUs the worker should be able to use. `--gpus all` selects all GPUs, but you typically want to select which GPU to reserve, and if you have many, run multiple workers each with one reserved GPU.
 Likely, you will want to run the image in the background.
